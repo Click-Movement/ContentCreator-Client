@@ -137,7 +137,7 @@ export function SigninForm() {
                   <FormItem>
                     <div className="flex items-center justify-between">
                       <FormLabel className="text-gray-300">Password</FormLabel>
-                      <Link href="/auth/forgot-password" className="text-sm text-blue-400 hover:underline">
+                      <Link href="/auth/forget-password" className="text-sm text-blue-400 hover:underline">
                         Forgot password?
                       </Link>
                     </div>
