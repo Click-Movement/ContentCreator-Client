@@ -1,14 +1,10 @@
-import { login, signup } from "@/actions/actions.auth";
+import { SigninForm } from "@/components/auth/SigninForm"
 
-export default function LoginPage() {
-  return (
-    <form>
-      <label htmlFor="email">Email:</label>
-      <input id="email" name="email" type="email" required />
-      <label htmlFor="password">Password:</label>
-      <input id="password" name="password" type="password" required />
-      <button formAction={login}>Log in</button>
-      <button formAction={signup}>Sign up</button>
-    </form>
-  )
+export const metadata = {
+  title: 'Sign In | Your App Name',
+  description: 'Sign in to your account',
+}
+
+export default function SigninPage() {
+  return <SigninForm />
 }
