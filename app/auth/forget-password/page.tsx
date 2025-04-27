@@ -103,7 +103,7 @@ export default function ForgetPasswordPage() {
                   <CheckCircle className="h-4 w-4 text-green-500" />
                   <AlertTitle className="text-green-100">Check your email</AlertTitle>
                   <AlertDescription className="text-green-200">
-                    We've sent a password reset link to <strong>{resetStatus.email}</strong>. 
+                    We have sent a password reset link to <strong>{resetStatus.email}</strong>. 
                     Please check your inbox and follow the instructions to reset your password.
                   </AlertDescription>
                 </Alert>

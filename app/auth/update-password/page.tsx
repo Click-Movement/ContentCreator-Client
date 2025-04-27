@@ -224,7 +224,7 @@ export default function UpdatePasswordPage() {
               <CheckCircle className="h-4 w-4 text-green-500" />
               <AlertTitle className="text-green-100">Success!</AlertTitle>
               <AlertDescription className="text-green-200">
-                Your password has been successfully updated. You'll be redirected to the sign-in page shortly.
+                Your password has been successfully updated. You will be redirected to the sign-in page shortly.
               </AlertDescription>
             </Alert>
           ) : (

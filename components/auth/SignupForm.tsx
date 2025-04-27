@@ -18,7 +18,6 @@ import { Input } from "@/components/ui/input"
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -76,6 +75,8 @@ export function SignupForm() {
       const result = await signup({
         email: values.email,
         password: values.password,
+        firstName: values.firstName,
+        lastName: values.lastName,
       });
       setSignupStatus(result);
       
@@ -130,7 +131,7 @@ export function SignupForm() {
                   <CheckCircle className="h-4 w-4 text-green-500" />
                   <AlertTitle className="text-green-100">Verification email sent!</AlertTitle>
                   <AlertDescription className="text-green-200">
-                    We've sent a verification email to <strong>{signupStatus.email}</strong>. 
+                    We have sent a verification email to <strong>{signupStatus.email}</strong>. 
                     Please check your inbox and follow the instructions to verify your account.
                   </AlertDescription>
                 </Alert>

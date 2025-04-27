@@ -59,12 +59,18 @@ export function SigninForm() {
     setIsLoading(true);
     setLoginError(null);
     try {
-      await login(values.email, values.password);
-      // If we get here, the login was successful
-      // No need to redirect as the server action already handles this
+      const result = await login(values.email, values.password);
+      
+      if (!result.success) {
+        setLoginError(result.error || "Invalid email or password. Please try again.");
+        return;
+      }
+      
+      // Redirect on success
+      window.location.href = '/';
     } catch (error) {
       console.error("Login error:", error);
-      setLoginError("Invalid email or password. Please try again.");
+      setLoginError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -166,7 +172,7 @@ export function SigninForm() {
         </CardContent>
         <CardFooter className="flex flex-col space-y-4 border-t border-gray-800 pt-4">
           <div className="text-center text-gray-400 text-sm">
-            Don't have an account?{" "}
+            Don not have an account?{" "}
             <Link href="/auth/signup" className="text-blue-400 hover:underline">
               Create an account
             </Link>
