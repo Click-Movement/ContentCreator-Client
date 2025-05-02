@@ -19,7 +19,8 @@ export type PersonaType =
   'laura_loomer' | 
   'rush_limbaugh' |
   'tomi_lahren' |
-  'ben_shapiro';
+  'ben_shapiro' |
+  'custom'; // Add 'custom' persona type
 
 export type AIModelType = 'gpt' | 'claude';
 
@@ -29,7 +30,8 @@ export type AIModelType = 'gpt' | 'claude';
  * @param content Original content to rewrite
  * @param persona The conservative persona style to use
  * @param model The AI model to use (claude or gpt)
- * @param userApiKeys Optional user-provided API keys for OpenAI and Claude
+ * @param serverKeys Optional server-provided API keys for OpenAI and Claude
+ * @param customInstructions Optional custom instructions for a custom persona
  * @returns Rewritten content with HTML formatting
  */
 export async function rewriteInPersonaStyle(
@@ -37,21 +39,30 @@ export async function rewriteInPersonaStyle(
   content: string,
   persona: PersonaType,
   model: AIModelType = 'claude',
-  userApiKeys?: { openai?: string | null; claude?: string | null }
+  serverKeys?: { openai?: string | null; claude?: string | null },
+  customInstructions?: string  // Add this parameter
 ): Promise<RewrittenContent> {
   try {
-    // Create a persona-specific prompt that explicitly captures their style elements
-    const prompt = createDetailedPersonaPrompt(title, content, persona);
+    // Create a detailed prompt based on the selected persona
+    let detailedPrompt;
     
-    // Use the selected model for rewriting
-    if (model === 'gpt') {
-      return await rewriteWithGPT(prompt, persona, content, userApiKeys?.openai || undefined);
+    if (persona === 'custom' && customInstructions) {
+      // Use custom instructions directly if provided
+      detailedPrompt = createCustomPersonaPrompt(title, content, customInstructions);
     } else {
-      return await rewriteWithClaude(prompt, persona, content, userApiKeys?.claude || undefined);
+      // Use predefined persona
+      detailedPrompt = createDetailedPersonaPrompt(title, content, persona);
+    }
+
+    // Use the selected AI model to rewrite content
+    if (model === 'claude') {
+      return await rewriteWithClaude(detailedPrompt, persona, content, serverKeys?.claude);
+    } else {
+      return await rewriteWithGPT(detailedPrompt, persona, content, serverKeys?.openai);
     }
   } catch (error) {
-    console.error(`Error rewriting in ${persona} style with ${model}:`, error);
-    throw new Error(`Failed to rewrite content in ${persona} style with ${model}. Please try again later.`);
+    console.error(`Error in rewriteInPersonaStyle: ${error}`);
+    throw error;
   }
 }
 
@@ -63,13 +74,21 @@ async function rewriteWithClaude(
   apiKey?: string | null
 ): Promise<RewrittenContent> {
   try {
+    // Use the API key from environment in server or from params if provided
+    const usedApiKey = apiKey || process.env.CLAUDE_API_KEY;
+    
+    if (!usedApiKey) {
+      throw new Error('Claude API key is required');
+    }
+    
+    // Initialize Claude client with the API key
+    const claudeClient = new Anthropic({
+      apiKey: usedApiKey
+    });
+
     // Calculate token limit
     const targetTokens = Math.min(3800, Math.max(800, calculateTargetLength(originalContent)));
     
-    const claudeClient = new Anthropic({
-      apiKey: apiKey || process.env.CLAUDE_API_KEY || '',
-    });
-
     const response = await claudeClient.messages.create({
       model: 'claude-3-5-sonnet-20240620',
       max_tokens: targetTokens,
@@ -142,13 +161,21 @@ async function rewriteWithGPT(
   apiKey?: string | null
 ): Promise<RewrittenContent> {
   try {
-    const targetTokens = Math.min(3500, Math.max(800, calculateTargetLength(originalContent)));
+    // Use the API key from environment in server or from params if provided  
+    const usedApiKey = apiKey || process.env.OPENAI_API_KEY;
     
+    if (!usedApiKey) {
+      throw new Error('OpenAI API key is required');
+    }
+    
+    // Initialize OpenAI client with the API key
     const openaiClient = new OpenAI({
-      apiKey: apiKey || process.env.OPENAI_API_KEY || '',
+      apiKey: usedApiKey,
       dangerouslyAllowBrowser: true
     });
 
+    const targetTokens = Math.min(3500, Math.max(800, calculateTargetLength(originalContent)));
+    
     const response = await openaiClient.chat.completions.create({
       model: 'gpt-4', 
       messages: [
@@ -320,34 +347,31 @@ IMPORTANT INSTRUCTIONS:
   }
 }
 
-// Add this at the beginning of each persona prompt function
-// function createGenericPersonaPrompt(title: string, content: string, lengthGuidance: string, persona: string): string {
-//   const basePrompt = `
-// TASK: Rewrite the following article in ${persona}'s exact style and voice.
+// Add a function to create custom persona prompts
+function createCustomPersonaPrompt(title: string, content: string, customInstructions: string): string {
+  return `
+TITLE: ${title}
 
-// ${lengthGuidance}
+CONTENT TO REWRITE: 
+${content}
 
-// IMPORTANT INSTRUCTIONS:
-// - ALWAYS create a NEW title in ${persona}'s style, even if the original title already seems similar
-// - Generate FRESH content that captures ${persona}'s unique voice and rhetorical patterns
-// - Don't simply return the original content if it seems similar - recreate it in ${persona}'s authentic style
-// - Ensure the output has the distinctive markers and phrases of ${persona}'s communication style
+CUSTOM PERSONA INSTRUCTIONS:
+${customInstructions}
 
-// ORIGINAL TITLE:
-// ${title}
+TASK:
+Rewrite the provided article using the persona described above. Keep the factual information but change the style, tone, and phrasing to match the persona. The output should be in HTML format for web display, including proper paragraph breaks, formatting, and emphasis where appropriate.
 
-// ORIGINAL CONTENT:
-// ${content}
+- Keep the same facts as the original
+- Use the persona's typical language patterns and expressions
+- Maintain approximately the same length
+- Include a rewritten headline/title that matches the persona's style
+- Add appropriate HTML formatting (<p>, <strong>, <em>, etc.)
 
-// OUTPUT FORMAT:
-// Title: [Your ${persona}-style title]
-
-// Content:
-// [Complete ${persona}-style content with HTML paragraph tags]
-// `;
-
-//   return basePrompt;
-// }
+Output TWO sections:
+1. REWRITTEN_TITLE: A rewritten headline in the persona's style
+2. REWRITTEN_CONTENT: HTML-formatted full content in the persona's style
+`;
+}
 
 function createCharlieKirkPrompt(title: string, content: string, lengthGuidance: string): string {
   return `
@@ -1060,86 +1084,119 @@ TASK: Rewrite the following article in Ben Shapiro's exact style and voice.
 ${lengthGuidance}
 
 TITLE STYLE:
-- For logical/argument topics: "The Truth About [Topic]", "The Left's Illogical Position on [Topic]", "Debunking [Topic]: Facts vs Feelings"
-- For political topics: "Why [Liberal Position on Topic] Makes No Sense", "The Intellectual Bankruptcy of [Topic]", "The Data on [Topic] That Leftists Ignore"
-- For free speech/campus topics: "Campus Snowflakes Can't Handle [Topic]", "The Free Speech Crisis: [Topic]", "Why [Topic] Matters for Liberty"
-- Use colons, questions, and occasional sarcasm
-- Maintain intellectual framing with references to constitutional principles
+- For debate topics: "DEBUNKED: The Myth of [Topic]", "The FACTS About [Topic]", "The Left's DISHONESTY On [Topic]"
+- For political topics: "The Truth About [Topic] (And Why The Left Hates It)", "Destroying The Left's Narrative On [Topic]", "Let's Talk Facts About [Topic]"
+- For controversial topics: "Reality Check: [Topic]", "Here's Why The Left Is WRONG About [Topic]", "Facts Don't Care About Your Feelings On [Topic]"
+- Use logical framing with clear thesis statements
+- Keep titles punchy but substantive
 
 OPENING PARAGRAPH STYLE:
 - Always start with one of these exact opening phrases:
-  * "Okay, so here's the thing about [TOPIC]."
-  * "Let's say, for the sake of argument, that [POSITION]."
-  * "Let me lay out the facts here."
-  * "The left's position on [TOPIC] is, frankly, ridiculous."
-  * "Let's break this down logically."
-  * "Facts don't care about your feelings, and the facts about [TOPIC] are clear."
-  * "Here's what the data actually tells us about [TOPIC]."
-- Establish clear definitions before proceeding with arguments
-- Use rapid-fire, information-dense sentences with minimal transition
+  * "Let's get something straight right off the bat."
+  * "The left's narrative on this is completely false."
+  * "The data here is crystal clear."
+  * "OK folks, let's break this down logically."
+  * "First of all, let's separate fact from fiction."
+  * "Let me just say this as clearly and quickly as possible."
+  * "We need to analyze this situation objectively."
+  * "I've been saying this for years, but the left refuses to listen."
+- For the main topic, use phrases like:
+  * "The facts about [TOPIC] directly contradict the left's preferred narrative."
+  * "When we logically examine [TOPIC], the progressive position collapses."
+  * "The data on [TOPIC] simply doesn't support what the left claims."
+  * "The fundamental problem with how the left approaches [TOPIC] is their rejection of basic reality."
+- Begin with a definitive stance that frames the issue
+- Establish immediate logical framing and rejection of emotional arguments
 
 PARAGRAPH TRANSITIONS:
-- "So first of all,"
-- "Let's move on to point number two,"
-- "Now, let's examine the facts."
-- "Here's where the logic breaks down."
-- "Statistically speaking,"
-- "The data clearly shows"
-- "Let's say, hypothetically,"
-- "Moving from the abstract to the concrete,"
+- "Now, let's analyze this."
+- "Point number one."
+- "Here's fact number two."
+- "Let's look at the data."
+- "The next logical question is..."
+- "This brings me to my next point."
+- "Let me be perfectly clear about this."
+- "Let's be intellectually honest here."
+- "The facts are undeniable."
+- "If we're being logically consistent..."
 
-SYLLOGISTIC REASONING PATTERNS (USE THESE FREQUENTLY):
-- "If A is true, and B follows from A, then B must be true."
-- "Either A or B must be true. A is demonstrably false. Therefore, B."
-- "The only possible explanations are X, Y, or Z. X and Y are illogical. Therefore, Z."
-- Use "therefore" and "thus" frequently to connect logical steps
-- Present arguments in clear premise-conclusion format
-- Number points explicitly (First, Second, Third)
+RHETORICAL DEVICES:
+- Rapid-fire delivery with numbered points
+- Statistics and data references delivered quickly
+- Hypothetical scenarios that lead to absurdity
+- Logical syllogisms (if A, then B, therefore C)
+- Anticipating and pre-emptively refuting counterarguments
+- Pointed rhetorical questions followed by immediate answers
+- Use of "let's say" to set up hypothetical scenarios
+- Frequent references to logical fallacies committed by opponents
+
+REGULAR USE OF RHETORICAL QUESTIONS LIKE:
+- "What does the data actually say?"
+- "Where in the Constitution does it state this?"
+- "Is that consistent with the facts?"
+- "How can the left logically argue this position?"
+- "If that's true, then why...?"
+- "Let me ask you this simple question."
+- "But what about the empirical evidence?"
+- "Let's say, for the sake of argument..."
 
 SIGNATURE PHRASES TO INCLUDE:
 - "Facts don't care about your feelings."
-- "Let's say, for the sake of argument,"
-- "Okay, so"
-- "That's just not true."
-- "Here's the reality."
-- "Let's break this down."
-- "By definition"
-- "Statistically speaking"
-- "The idea that [opposing view] is absurd on its face."
-- "This is a fundamental misunderstanding of [topic]."
+- "Let's say, hypothetically..."
+- "This is a logical fallacy."
+- "The data simply doesn't back this up."
+- "This is just objectively false."
+- "Let me break this down for you."
+- "The left has no answer for this."
+- "That's completely absurd."
+- "Let's be intellectually honest here."
 
 LANGUAGE PATTERNS:
-- Use rapid-fire sentence structure with logical connectors
-- Speak in complete, grammatically perfect sentences
 - Replace "important/significant/crucial" with "fundamental"
-- Replace "problem/issue/concern" with "fallacy" or "logical error"
-- Replace "said/stated/mentioned" with "argued" or "posited"
-- Replace "may/might/could" with "necessarily"
-- Replace "some people think/some believe" with "the left claims"
-- Replace "it is possible that" with "logically,"
-- Replace "it seems that" with "it's objectively clear that"
-- Maintain emotional restraint with calculated indignation
+- Replace "problem/issue/concern" with "logical inconsistency"
+- Replace "said/stated/mentioned" with "asserted"
+- Replace "may/might/could" with "empirically does"
+- Replace "some people think/some believe" with "the data shows"
+- Replace "it is possible that" with "it is demonstrable that"
+- Replace "it seems that" with "it is logically evident that"
+- Use rapid, staccato sentence structure
+- Speak very quickly with minimal pauses
+- Employ terms like "statistically," "empirically," "objectively"
+- Use phrases like "the Left" or "leftists" rather than "liberals"
+- Reference Constitutional principles frequently
+- Use formal academic language alongside casual commentary
 
 FREQUENT REFERENCES TO:
-- Statistical data and specific percentages
-- Constitutional principles and originalist interpretations
-- Logical fallacies (straw man, ad hominem, etc.)
-- Western civilization and Judeo-Christian values
-- Free speech and First Amendment
-- Legal precedents and frameworks
-- Academic references and specific studies
+- Logical fallacies (strawman, ad hominem, etc.)
+- Statistical data and empirical studies
+- The Constitution and founding documents
+- Judeo-Christian values
+- Free speech and free markets
+- Facts versus feelings
+- Intellectual honesty
+- Objective truth claims
+- Western civilization and its values
+- Individual rights and responsibilities
 
 CLOSING STYLE:
-- Start with phrases like "So in conclusion," or "The bottom line is this:"
-- Summarize the logical argument in clear, direct terms
-- End with a challenge to the opposing viewpoint like "And that's something the left simply cannot refute." or "Those are the facts, regardless of how they make anyone feel."
-- Maintain certainty and definitiveness in final statements
+- Start with phrases like "The bottom line is straightforward." or "To summarize, the facts are clear."
+- Include a logical synthesis of arguments presented
+- End with a statement like "These aren't opinions, they're facts, and facts don't care about your feelings." or "The data is what it is, regardless of how the left feels about it."
+- Emphasize logic-based conclusions
+- Deliver a final definitive stance or prediction
+- Reference back to constitutional principles or fundamental values
+
+SPECIAL SECTIONS:
+- Include a "LOGICAL ANALYSIS" section that breaks down arguments point by point
+- Include a "DATA BREAKDOWN" section with specific statistics
+- Add a "CONSTITUTIONAL PERSPECTIVE" section citing relevant legal precedents
+- Include a section addressing and refuting "COMMON LEFTIST ARGUMENTS"
 
 FORMAT: 
 - Structure with HTML paragraph tags (<p>...</p>)
 - Write an engaging title and content that maintains key facts but completely rewrites in Shapiro's distinctive style
-- Use short to medium paragraphs with clear logical progression
-- Create dense, information-rich content with minimal fluff
+- Use short, punchy paragraphs for emphasis
+- Create clear logical progression with numbered or sequential arguments
 
 ORIGINAL TITLE:
 ${title}

@@ -1,40 +1,64 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-// import { personas, PersonaType } from '@/types/personas';
-import { useApiKeys } from '@/hooks/useApiKeys';
-import { Persona, PersonaType } from '@/types/personas';
-import { personas } from '@/types/personas';
-import ApiKeyInput from '@/components/ApiKeyInput';
-// import ApiKeyInput from '@/components/ApiKeyInput';
+import { Persona, PersonaType, personas as defaultPersonas } from '@/types/personas';
+import { PlusCircle } from 'lucide-react';
+import CustomPersonaModal from '@/components/CustomPersonaModal';
+import Header from '@/components/header';
+
+// Define the extended persona type which includes custom personas
+type ExtendedPersonaType = PersonaType | string;
+
+// Type for custom personas saved by the user
+type CustomPersona = {
+  id: string;
+  name: string;
+  description: string;
+  instructions: string;
+};
 
 export default function Home() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [selectedPersona, setSelectedPersona] = useState<PersonaType>('rush_limbaugh');
+  const [selectedPersona, setSelectedPersona] = useState<ExtendedPersonaType>('rush_limbaugh');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedModel, setSelectedModel] = useState<'gpt' | 'claude'>('claude');
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
-  const { keys, hasRequiredKey } = useApiKeys();
+  const [customPersonas, setCustomPersonas] = useState<CustomPersona[]>([]);
+  const [isCustomPersonaModalOpen, setIsCustomPersonaModalOpen] = useState(false);
   const router = useRouter();
 
+  // Merged personas include both default and custom personas
+  const mergedPersonas = [...defaultPersonas, ...customPersonas];
 
-  console.log("Api Key", keys);
+  // Load custom personas from localStorage on component mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedCustomPersonas = localStorage.getItem('customPersonas');
+      if (savedCustomPersonas) {
+        try {
+          const parsedPersonas = JSON.parse(savedCustomPersonas);
+          setCustomPersonas(parsedPersonas);
+        } catch (error) {
+          console.error('Failed to parse custom personas:', error);
+        }
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!hasRequiredKey(selectedModel)) {
-      setError(`Please add your ${selectedModel === 'gpt' ? 'OpenAI' : 'Claude'} API key to use this model.`);
-      setShowApiKeyInput(true);
-      return;
-    }
-
     try {
       setIsLoading(true);
       setError('');
+
+      // Find the selected persona's instructions if it's a custom one
+      const selectedPersonaData = mergedPersonas.find(p => p.id === selectedPersona);
+      const customInstructions = selectedPersonaData && 'instructions' in selectedPersonaData 
+        ? selectedPersonaData.instructions 
+        : undefined;
 
       const response = await fetch('/api/rewrite-direct', {
         method: 'POST',
@@ -46,7 +70,7 @@ export default function Home() {
           content,
           persona: selectedPersona,
           model: selectedModel,
-          userApiKeys: keys // Pass the keys from the hook
+          customInstructions
         }),
       });
 
@@ -73,48 +97,27 @@ export default function Home() {
     }
   };
 
+  // Handle saving new custom persona
+  const handleSaveCustomPersona = (persona: CustomPersona) => {
+    const updatedPersonas = [...customPersonas, persona];
+    setCustomPersonas(updatedPersonas);
+    
+    // Save to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('customPersonas', JSON.stringify(updatedPersonas));
+    }
+    
+    // Auto-select the newly created persona
+    setSelectedPersona(persona.id);
+  };
+
   // Find the currently selected persona
-  const currentPersona = personas.find((p: Persona) => p.id === selectedPersona) || personas[0];
+  const currentPersona = mergedPersonas.find((p: any) => p.id === selectedPersona) || mergedPersonas[0];
 
   return (
     <main className="flex min-h-screen flex-col p-4 md:p-8">
-      {/* API Key Modal/Dialog */}
-      {showApiKeyInput && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center p-4 border-b">
-              <h2 className="text-lg font-semibold">API Keys</h2>
-              <button 
-                onClick={() => setShowApiKeyInput(false)}
-                className="text-gray-400 hover:text-gray-500"
-              >
-                ✕
-              </button>
-            </div>
-            <ApiKeyInput onClose={() => setShowApiKeyInput(false)} />
-          </div>
-        </div>
-      )}
-      
-      {/* API Key Settings Button */}
-      <div className="w-full max-w-4xl mx-auto mb-4 flex justify-end">
-        <button
-          onClick={() => setShowApiKeyInput(true)}
-          className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 py-1 px-3 rounded-md flex items-center"
-        >
-          <span className="mr-1">🔑</span> 
-          {hasRequiredKey('claude') || hasRequiredKey('gpt') ? 'Manage API Keys' : 'Add API Keys'}
-        </button>
-      </div>
-
-      {/* Enhanced Header with Gradient Background */}
       <div className="w-full max-w-4xl mx-auto">
-        <header className="mb-8 text-center">
-          <div className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white py-6 px-4 rounded-lg shadow-lg mb-6">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">Conservative Content Rewriter</h1>
-            <p className="text-lg text-blue-100">Transform your content with distinctive conservative voices</p>
-          </div>
-        </header>
+        <Header />
         
         {/* Step Indicator */}
         <div className="mb-8 px-4">
@@ -147,53 +150,50 @@ export default function Home() {
           <div className="p-6 md:p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="persona" className="block text-sm font-medium text-gray-700 mb-1">
-                  Select Commentator Style
-                </label>
+                <div className="flex justify-between items-center mb-1">
+                  <label htmlFor="persona" className="block text-sm font-medium text-gray-700">
+                    Select Commentator Style
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomPersonaModalOpen(true)}
+                    className="text-sm flex items-center text-blue-600 hover:text-blue-800"
+                  >
+                    <PlusCircle className="h-4 w-4 mr-1" />
+                    Create Custom
+                  </button>
+                </div>
+                
                 <div className="relative">
                   <select
                     id="persona"
                     value={selectedPersona}
-                    onChange={(e) => setSelectedPersona(e.target.value as PersonaType)}
+                    onChange={(e) => setSelectedPersona(e.target.value as ExtendedPersonaType)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white transition-colors duration-200"
                   >
-                    {personas.map((persona:Persona) => (
-                      <option key={persona.id} value={persona.id}>
-                        {persona.name} - {persona.description}
-                      </option>
-                    ))}
+                    <optgroup label="Default Commentators">
+                      {defaultPersonas.map((persona: Persona) => (
+                        <option key={persona.id} value={persona.id}>
+                          {persona.name} - {persona.description}
+                        </option>
+                      ))}
+                    </optgroup>
+                    
+                    {customPersonas.length > 0 && (
+                      <optgroup label="Custom Commentators">
+                        {customPersonas.map((persona) => (
+                          <option key={persona.id} value={persona.id}>
+                            {persona.name} - {persona.description}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
                     <svg className="fill-current h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                       <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
                     </svg>
                   </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Configure API Keys
-                </label>
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => setShowApiKeyInput(true)}
-                    className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md transition-colors duration-200 border border-gray-300"
-                  >
-                    <span className="mr-2">🔑</span> 
-                    {hasRequiredKey('claude') && hasRequiredKey('gpt') 
-                      ? 'API Keys Configured' 
-                      : hasRequiredKey('claude') || hasRequiredKey('gpt')
-                        ? 'Configure Additional API Keys'
-                        : 'Add Your API Keys'}
-                    <svg className="ml-2 h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Your API keys are required to use OpenAI or Claude models. Keys are stored securely in your browser.
-                  </p>
                 </div>
               </div>
               
@@ -263,7 +263,7 @@ export default function Home() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 h-64"
                   required
                 />
-                  <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-gray-500">
                   Paste the full article content to be rewritten in {currentPersona.name}
                   &#39;s style.
                 </p>
@@ -306,6 +306,13 @@ export default function Home() {
             </form>
           </div>
         </div>
+        
+        {/* Custom Persona Modal */}
+        <CustomPersonaModal 
+          isOpen={isCustomPersonaModalOpen}
+          onClose={() => setIsCustomPersonaModalOpen(false)}
+          onSave={handleSaveCustomPersona}
+        />
         
         {/* Footer */}
         <footer className="mt-8 text-center text-gray-500 text-sm">

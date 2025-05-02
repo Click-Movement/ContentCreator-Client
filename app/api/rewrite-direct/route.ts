@@ -6,7 +6,7 @@ export const runtime = 'edge';
 
 export async function POST(request: NextRequest) {
   try {
-    const { title, content, persona, model, userApiKeys } = await request.json();
+    const { title, content, persona, model, customInstructions } = await request.json();
     
     if (!title || !content) {
       return NextResponse.json(
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Validate persona type
+    // Validate persona type for built-in personas
     const validPersonas = [
       'charlie_kirk',
       'larry_elder', 
@@ -23,35 +23,44 @@ export async function POST(request: NextRequest) {
       'laura_loomer', 
       'tomi_lahren', 
       'rush_limbaugh',
-      'ben_shapiro'  // Add Ben Shapiro to valid personas list
+      'ben_shapiro'
     ];
     
-    // Use default persona if not specified or invalid
-    const selectedPersona = validPersonas.includes(persona) 
-      ? persona as PersonaType 
-      : 'rush_limbaugh' as PersonaType;
+    // Check if we have API keys in environment variables
+    const openaiKey = process.env.OPENAI_API_KEY;
+    const claudeKey = process.env.CLAUDE_API_KEY;
     
     // Validate model selection
     const selectedModel = model === 'gpt' ? 'gpt' : 'claude';
     
-    // Check API key requirements
-    if (selectedModel === 'gpt' && !userApiKeys?.openai) {
+    if (selectedModel === 'gpt' && !openaiKey) {
       return NextResponse.json(
-        { error: 'OpenAI API key is required for GPT model', missingKey: 'openai' },
-        { status: 400 }
+        { error: 'OpenAI API key is not configured on the server' },
+        { status: 500 }
       );
     }
     
-    if (selectedModel === 'claude' && !userApiKeys?.claude) {
+    if (selectedModel === 'claude' && !claudeKey) {
       return NextResponse.json(
-        { error: 'Claude API key is required for Claude model', missingKey: 'claude' },
-        { status: 400 }
+        { error: 'Claude API key is not configured on the server' },
+        { status: 500 }
       );
     }
     
-    // Add timeout for the API call
+    // Use environment variables for API keys
+    const serverApiKeys = {
+      openai: openaiKey || null,
+      claude: claudeKey || null
+    };
+    
+    // Check if we're using a custom persona (starts with 'custom_')
+    const isCustomPersona = typeof persona === 'string' && persona.startsWith('custom_');
+    
+    // Handle rewriting
     const rewrittenContent = await Promise.race([
-      rewriteInPersonaStyle(title, content, selectedPersona, selectedModel as AIModelType, userApiKeys),
+      isCustomPersona && customInstructions
+        ? rewriteInPersonaStyle(title, content, 'custom' as PersonaType, selectedModel as AIModelType, serverApiKeys, customInstructions)
+        : rewriteInPersonaStyle(title, content, persona as PersonaType, selectedModel as AIModelType, serverApiKeys),
       new Promise((_, reject) => 
         setTimeout(() => reject(new Error('API call timed out')), 45000)
       ) as Promise<never>
@@ -61,8 +70,7 @@ export async function POST(request: NextRequest) {
       success: true,
       title: rewrittenContent.title,
       content: rewrittenContent.content,
-      persona: selectedPersona,
-      model: selectedModel
+      persona: persona
     });
   } catch (error) {
     console.error('Error in AI rewrite API:', error);

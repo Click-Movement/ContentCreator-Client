@@ -23,7 +23,7 @@ export default function NavBar() {
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center">
               <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                Conservative Rewriter
+                Content Rewriter
               </span>
             </Link>
           </div>
@@ -78,20 +78,8 @@ export default function NavBar() {
             </button>
           </div>
           
-          {/* Right side items */}
+          {/* Right side items - only show user profile, remove API key button */}
           <div className="hidden md:flex md:items-center md:gap-4">
-            {/* API Key Button - optional */}
-            <button
-              type="button"
-              onClick={() => {
-                // Add your API key modal trigger here
-              }}
-              className="text-sm px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md transition-colors duration-200"
-            >
-              <span className="mr-1">🔑</span> API Keys
-            </button>
-            
-            {/* User Profile Dropdown */}
             <UserProfileDropdown />
           </div>
         </div>
@@ -136,17 +124,6 @@ export default function NavBar() {
             </Link>
             
             <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-800">
-              <button
-                type="button"
-                onClick={() => {
-                  // Add your API key modal trigger here
-                  setMobileMenuOpen(false)
-                }}
-                className="flex w-full items-center px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
-              >
-                <span className="mr-2">🔑</span> API Keys
-              </button>
-              
               <div className="px-3 py-2">
                 <UserProfileDropdown />
               </div>

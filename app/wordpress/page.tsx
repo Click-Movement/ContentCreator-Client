@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Persona, personas, PersonaType } from '@/types/personas';
+import Header from '@/components/header';
 // import { personas, PersonaType } from '@/types/personas';
 
 export default function WordPressPage() {
@@ -177,12 +178,13 @@ export default function WordPressPage() {
     <main className="flex min-h-screen flex-col p-4 md:p-8">
       <div className="w-full max-w-4xl mx-auto">
         {/* Enhanced Header with Gradient Background */}
-        <header className="mb-8 text-center">
+        {/* <header className="mb-8 text-center">
           <div className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white py-6 px-4 rounded-lg shadow-lg mb-6">
             <h1 className="text-3xl md:text-4xl font-bold mb-2">Conservative Content Rewriter</h1>
             <p className="text-lg text-blue-100">Transform your content with distinctive conservative voices</p>
           </div>
-        </header>
+        </header> */}
+        <Header/>
         
         {/* Step Indicator */}
         <div className="mb-8 px-4">
