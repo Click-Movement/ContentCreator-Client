@@ -1,32 +1,45 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Persona, personas, PersonaType } from '@/types/personas';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import DOMPurify from 'isomorphic-dompurify';
 import Header from '@/components/header';
+// import Header from '@/components/Header';
+
+// Type for rewritten content
+type RewrittenContent = {
+  title: string;
+  content: string;
+  persona: string;
+};
+
+// Type for custom personas
+type CustomPersona = {
+  id: string;
+  name: string;
+  description: string;
+  instructions: string;
+};
 
 export default function RewritePage() {
-  const [rewrittenContent, setRewrittenContent] = useState<{
-    title: string;
-    content: string;
-    persona: PersonaType;
-  } | null>(null);
+  const [rewrittenContent, setRewrittenContent] = useState<RewrittenContent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [htmlMode, setHtmlMode] = useState(false);
   const router = useRouter();
-  
-  // Load rewritten content from localStorage when component mounts
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setIsLoading(true);
       const savedContent = localStorage.getItem('rewrittenContent');
+      
       if (savedContent) {
         try {
           const parsedContent = JSON.parse(savedContent);
           setRewrittenContent(parsedContent);
-          
-        } catch {
-          setError('Failed to load rewritten content. Please try again.');
+        } catch (err) {
+          setError('Failed to parse saved content.');
         }
       } else {
         setError('No rewritten content found. Please go back and rewrite content first.');
@@ -41,12 +54,26 @@ export default function RewritePage() {
 
   // Find the persona name if available
   const getPersonaName = () => {
-    if (!rewrittenContent?.persona) return 'Selected Commentator';
+    if (!rewrittenContent?.persona) return 'Custom Commentator';
     
-    // Check if it's a custom persona (custom_name format)
+    // Load custom personas from localStorage
+    if (typeof window !== 'undefined') {
+      const savedCustomPersonas = localStorage.getItem('customPersonas');
+      if (savedCustomPersonas) {
+        try {
+          const customPersonas: CustomPersona[] = JSON.parse(savedCustomPersonas);
+          const persona = customPersonas.find(p => p.id === rewrittenContent.persona);
+          if (persona) {
+            return persona.name;
+          }
+        } catch (err) {
+          console.error('Failed to parse custom personas', err);
+        }
+      }
+    }
+    
+    // Fallback - extract name from persona ID
     if (rewrittenContent.persona.startsWith('custom_')) {
-      // For custom personas, extract the name from the ID
-      // Replace underscores with spaces and capitalize words
       const customName = rewrittenContent.persona.replace('custom_', '')
         .replace(/_/g, ' ')
         .split(' ')
@@ -56,9 +83,7 @@ export default function RewritePage() {
       return customName;
     }
     
-    // For built-in personas, find it in the personas array
-    const persona = personas.find((p:Persona) => p.id === rewrittenContent.persona);
-    return persona?.name || 'Selected Commentator';
+    return 'Custom Commentator';
   };
 
   const personaName = getPersonaName();
@@ -96,107 +121,121 @@ export default function RewritePage() {
           </div>
         </div>
         
-        {/* Success Notification (when content is loaded) */}
-        {rewrittenContent && !error && !isLoading && (
-          <div className="mb-6 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md shadow-sm">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium">Content successfully rewritten in {personaName}&#39;s style!</p>
+        {/* Main Content */}
+        {isLoading ? (
+          <div className="bg-white rounded-xl shadow-lg p-8 flex justify-center items-center">
+            <div className="animate-pulse flex flex-col items-center">
+              <div className="h-8 bg-gray-200 rounded w-3/4 mb-6"></div>
+              <div className="h-4 bg-gray-200 rounded w-full mb-3"></div>
+              <div className="h-4 bg-gray-200 rounded w-5/6 mb-3"></div>
+              <div className="h-4 bg-gray-200 rounded w-4/6 mb-3"></div>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-red-700 text-base">{error}</p>
+                  <div className="mt-4">
+                    <button
+                      onClick={() => router.push('/')}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all duration-200"
+                    >
+                      Go Back to Home
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        )}
+        ) : (
+          <>
+            {/* Content presentation */}
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+              <div className="p-6 md:p-8">
+                {/* Header info */}
+                <div className="mb-6 border-b pb-4">
+                  <div className="flex justify-between items-center">
+                    <h1 className="text-2xl font-bold text-gray-900">{rewrittenContent?.title}</h1>
+                    <div>
+                      <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-0.5 text-sm font-medium text-blue-800">
+                        {personaName}'s Style
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-        {/* Main Content Card */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {/* Card Header */}
-          <div className="bg-blue-50 px-6 py-4 border-b border-blue-100">
-            <h2 className="text-xl font-semibold text-blue-800">{personaName} Style Rewrite</h2>
-          </div>
-          
-          <div className="p-6 md:p-8">
-            {isLoading ? (
-              <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-              </div>
-            ) : error ? (
-              <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm">{error}</p>
-                  </div>
-                </div>
-                <div className="mt-4 text-center">
-                  <button
-                    onClick={() => router.push('/')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-200"
-                  >
-                    Back to Home
-                  </button>
-                </div>
-              </div>
-            ) : rewrittenContent ? (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Rewritten Title:</h3>
-                  <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
-                    {/* Fixed styling for title - prevent it from using default h1 styling */}
-                    <div className="text-xl font-bold text-gray-900">{rewrittenContent.title}</div>
+                {/* Display mode toggle */}
+                <div className="mb-6 flex justify-end">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-500">View mode:</span>
+                    <div className="bg-gray-100 rounded-lg p-1 flex">
+                      <button
+                        className={`px-3 py-1 rounded-md text-sm ${!htmlMode ? 'bg-white shadow text-gray-800' : 'text-gray-500'}`}
+                        onClick={() => setHtmlMode(false)}
+                      >
+                        Preview
+                      </button>
+                      <button
+                        className={`px-3 py-1 rounded-md text-sm ${htmlMode ? 'bg-white shadow text-gray-800' : 'text-gray-500'}`}
+                        onClick={() => setHtmlMode(true)}
+                      >
+                        HTML
+                      </button>
+                    </div>
                   </div>
                 </div>
                 
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Rewritten Content:</h3>
-                  <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
-                    {/* Use prose class for proper styling of HTML content */}
-                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: rewrittenContent.content }} />
+                {/* Content display */}
+                {htmlMode ? (
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 overflow-hidden">
+                    <SyntaxHighlighter
+                      language="html"
+                      style={vscDarkPlus}
+                      customStyle={{ margin: 0, borderRadius: '0.375rem' }}
+                      wrapLongLines={true}
+                    >
+                      {rewrittenContent?.content || ''}
+                    </SyntaxHighlighter>
                   </div>
-                </div>
+                ) : (
+                  <div 
+                    className="prose prose-lg max-w-none"
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(rewrittenContent?.content || '') }}
+                  ></div>
+                )}
                 
-                <div className="flex flex-col sm:flex-row justify-between gap-4 pt-4">
+                {/* Actions */}
+                <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-between">
                   <button
                     onClick={() => router.push('/')}
-                    className="order-2 sm:order-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition-colors duration-200"
+                    className="flex-1 py-2 px-4 border border-blue-300 text-blue-700 hover:bg-blue-50 font-medium rounded-lg transition-colors"
                   >
-                    Edit Content
+                    Create New Rewrite
                   </button>
-                  
+                  <button
+                    onClick={() => navigator.clipboard.writeText(rewrittenContent?.content || '')}
+                    className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium rounded-lg transition-colors"
+                  >
+                    Copy HTML
+                  </button>
                   <button
                     onClick={handleProceedToWordPress}
-                    className="order-1 sm:order-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+                    className="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors"
                   >
-                    Proceed to Publish
+                    Publish to wordpress
                   </button>
                 </div>
               </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-gray-600">No content found. Please go back and rewrite content first.</p>
-                <button
-                  onClick={() => router.push('/')}
-                  className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-200"
-                >
-                  Back to Home
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Footer */}
-        <footer className="mt-8 text-center text-gray-500 text-sm">
-          <p>Conservative Content Rewriter &copy; {new Date().getFullYear()}</p>
-        </footer>
+            </div>
+          </>
+        )}
       </div>
     </main>
   );

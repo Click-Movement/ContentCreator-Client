@@ -6,7 +6,7 @@ export const runtime = 'edge';
 
 export async function POST(request: NextRequest) {
   try {
-    const { title, content, persona, model, customInstructions } = await request.json();
+    const { title, content, model, customInstructions } = await request.json();
     
     if (!title || !content) {
       return NextResponse.json(
@@ -15,16 +15,12 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Validate persona type for built-in personas
-    const validPersonas = [
-      'charlie_kirk',
-      'larry_elder', 
-      'glenn_beck', 
-      'laura_loomer', 
-      'tomi_lahren', 
-      'rush_limbaugh',
-      'ben_shapiro'
-    ];
+    if (!customInstructions) {
+      return NextResponse.json(
+        { error: 'Custom instructions are required' },
+        { status: 400 }
+      );
+    }
     
     // Check if we have API keys in environment variables
     const openaiKey = process.env.OPENAI_API_KEY;
@@ -47,33 +43,57 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    console.log("Starting content rewrite with model:", selectedModel);
+    
     // Use environment variables for API keys
     const serverApiKeys = {
       openai: openaiKey || null,
       claude: claudeKey || null
     };
     
-    // Check if we're using a custom persona (starts with 'custom_')
-    const isCustomPersona = typeof persona === 'string' && persona.startsWith('custom_');
+    // Use custom persona type with custom instructions
+    let rewrittenContent;
+    try {
+      rewrittenContent = await Promise.race([
+        rewriteInPersonaStyle(
+          title, 
+          content, 
+          'custom' as PersonaType, 
+          selectedModel as AIModelType,
+          serverApiKeys, 
+          customInstructions
+        ),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('API call timed out')), 60000)
+        ) as Promise<never>
+      ]);
+    } catch (error) {
+      console.error("Error during rewrite:", error);
+      
+      // Provide a fallback response instead of erroring
+      rewrittenContent = {
+        title: title || "Rewrite Attempt",
+        content: `<p>We encountered an issue while trying to rewrite your content.</p>
+                  <p>The AI service responded with: "${error instanceof Error ? error.message : 'Unknown error'}"</p>
+                  <p>Please try again with different content or instructions.</p>`
+      };
+    }
     
-    // Handle rewriting
-    const rewrittenContent = await Promise.race([
-      isCustomPersona && customInstructions
-        ? rewriteInPersonaStyle(title, content, 'custom' as PersonaType, selectedModel as AIModelType, serverApiKeys, customInstructions)
-        : rewriteInPersonaStyle(title, content, persona as PersonaType, selectedModel as AIModelType, serverApiKeys),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('API call timed out')), 45000)
-      ) as Promise<never>
-    ]);
+    // Always ensure we have some sort of title and content
+    const responseTitle = rewrittenContent?.title || title || "Rewritten Article";
+    const responseContent = rewrittenContent?.content || 
+      `<p>No content was generated. Please try again with different instructions.</p>`;
+    
+    console.log("Rewrite complete - sending response");
     
     return NextResponse.json({
       success: true,
-      title: rewrittenContent.title,
-      content: rewrittenContent.content,
-      persona: persona
+      title: responseTitle,
+      content: responseContent
     });
+    
   } catch (error) {
-    console.error('Error in AI rewrite API:', error);
+    console.error('Error in API route:', error);
     
     // Check for specific AI-related errors
     const errorMessage = error instanceof Error 

@@ -179,11 +179,10 @@ When rewriting content, use a tone that embodies these characteristics and mimic
     // Save persona
     onSave(newPersona);
     
-    // Reset form
+    // Reset the form (but don't close the modal - that's handled by the parent)
     resetForm();
     
-    // Close modal
-    onClose();
+    // Note: We're not calling onClose() here anymore - the parent component will handle it
   };
   
   const resetForm = () => {

@@ -2,13 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Persona, PersonaType, personas as defaultPersonas } from '@/types/personas';
 import { PlusCircle } from 'lucide-react';
 import CustomPersonaModal from '@/components/CustomPersonaModal';
 import Header from '@/components/header';
-
-// Define the extended persona type which includes custom personas
-type ExtendedPersonaType = PersonaType | string;
+// import Header from '@/components/Header';
 
 // Type for custom personas saved by the user
 type CustomPersona = {
@@ -21,16 +18,13 @@ type CustomPersona = {
 export default function Home() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [selectedPersona, setSelectedPersona] = useState<ExtendedPersonaType>('rush_limbaugh');
+  const [selectedPersona, setSelectedPersona] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedModel, setSelectedModel] = useState<'gpt' | 'claude'>('claude');
   const [customPersonas, setCustomPersonas] = useState<CustomPersona[]>([]);
   const [isCustomPersonaModalOpen, setIsCustomPersonaModalOpen] = useState(false);
   const router = useRouter();
-
-  // Merged personas include both default and custom personas
-  const mergedPersonas = [...defaultPersonas, ...customPersonas];
 
   // Load custom personas from localStorage on component mount
   useEffect(() => {
@@ -40,9 +34,20 @@ export default function Home() {
         try {
           const parsedPersonas = JSON.parse(savedCustomPersonas);
           setCustomPersonas(parsedPersonas);
+          
+          // Set the first custom persona as selected if available
+          if (parsedPersonas.length > 0) {
+            setSelectedPersona(parsedPersonas[0].id);
+          } else {
+            // If no custom personas, show the modal automatically
+            setIsCustomPersonaModalOpen(true);
+          }
         } catch (error) {
           console.error('Failed to parse custom personas:', error);
         }
+      } else {
+        // No saved personas, show the modal automatically
+        setIsCustomPersonaModalOpen(true);
       }
     }
   }, []);
@@ -51,14 +56,23 @@ export default function Home() {
     e.preventDefault();
 
     try {
+      // Validation - make sure we have a selected persona
+      if (!selectedPersona) {
+        setError('Please create or select a custom commentator first.');
+        return;
+      }
+      
       setIsLoading(true);
       setError('');
 
-      // Find the selected persona's instructions if it's a custom one
-      const selectedPersonaData = mergedPersonas.find(p => p.id === selectedPersona);
-      const customInstructions = selectedPersonaData && 'instructions' in selectedPersonaData 
-        ? selectedPersonaData.instructions 
-        : undefined;
+      // Find the selected persona's instructions
+      const selectedPersonaData = customPersonas.find(p => p.id === selectedPersona);
+      
+      if (!selectedPersonaData) {
+        setError('Selected commentator not found. Please create or select another one.');
+        setIsLoading(false);
+        return;
+      }
 
       const response = await fetch('/api/rewrite-direct', {
         method: 'POST',
@@ -68,9 +82,9 @@ export default function Home() {
         body: JSON.stringify({
           title,
           content,
-          persona: selectedPersona,
+          persona: 'custom', // Always use 'custom' as the persona type
           model: selectedModel,
-          customInstructions
+          customInstructions: selectedPersonaData.instructions
         }),
       });
 
@@ -85,7 +99,7 @@ export default function Home() {
       localStorage.setItem('rewrittenContent', JSON.stringify({
         title: data.title,
         content: data.content,
-        persona: selectedPersona
+        persona: selectedPersona // Save the custom persona ID
       }));
 
       // Navigate to rewrite page to show results
@@ -110,9 +124,29 @@ export default function Home() {
     // Auto-select the newly created persona
     setSelectedPersona(persona.id);
   };
+  
+  // Handle deleting a custom persona
+  const handleDeletePersona = (personaId: string) => {
+    const updatedPersonas = customPersonas.filter(p => p.id !== personaId);
+    setCustomPersonas(updatedPersonas);
+    
+    // Save to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('customPersonas', JSON.stringify(updatedPersonas));
+    }
+    
+    // If we deleted the selected persona, select the first available one
+    if (selectedPersona === personaId) {
+      if (updatedPersonas.length > 0) {
+        setSelectedPersona(updatedPersonas[0].id);
+      } else {
+        setSelectedPersona('');
+      }
+    }
+  };
 
   // Find the currently selected persona
-  const currentPersona = mergedPersonas.find((p: any) => p.id === selectedPersona) || mergedPersonas[0];
+  const currentPersona = customPersonas.find(p => p.id === selectedPersona);
 
   return (
     <main className="flex min-h-screen flex-col p-4 md:p-8">
@@ -152,7 +186,7 @@ export default function Home() {
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <label htmlFor="persona" className="block text-sm font-medium text-gray-700">
-                    Select Commentator Style
+                    Select Custom Commentator
                   </label>
                   <button
                     type="button"
@@ -160,41 +194,61 @@ export default function Home() {
                     className="text-sm flex items-center text-blue-600 hover:text-blue-800"
                   >
                     <PlusCircle className="h-4 w-4 mr-1" />
-                    Create Custom
+                    Create New
                   </button>
                 </div>
                 
-                <div className="relative">
-                  <select
-                    id="persona"
-                    value={selectedPersona}
-                    onChange={(e) => setSelectedPersona(e.target.value as ExtendedPersonaType)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white transition-colors duration-200"
-                  >
-                    <optgroup label="Default Commentators">
-                      {defaultPersonas.map((persona: Persona) => (
+                {customPersonas.length > 0 ? (
+                  <div className="relative">
+                    <select
+                      id="persona"
+                      value={selectedPersona}
+                      onChange={(e) => setSelectedPersona(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white transition-colors duration-200"
+                    >
+                      {customPersonas.map((persona) => (
                         <option key={persona.id} value={persona.id}>
                           {persona.name} - {persona.description}
                         </option>
                       ))}
-                    </optgroup>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
+                      <svg className="fill-current h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                      </svg>
+                    </div>
                     
-                    {customPersonas.length > 0 && (
-                      <optgroup label="Custom Commentators">
-                        {customPersonas.map((persona) => (
-                          <option key={persona.id} value={persona.id}>
-                            {persona.name} - {persona.description}
-                          </option>
-                        ))}
-                      </optgroup>
+                    {/* Add delete button for the selected persona */}
+                    {selectedPersona && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to delete this commentator?')) {
+                            handleDeletePersona(selectedPersona);
+                          }
+                        }}
+                        className="absolute right-12 top-1/2 -translate-y-1/2 text-red-600 hover:text-red-800 transition-colors"
+                        title="Delete this commentator"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     )}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
-                    <svg className="fill-current h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                    </svg>
                   </div>
-                </div>
+                ) : (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                    <p className="text-gray-500">You don't have any custom commentators yet.</p>
+                    <button
+                      type="button"
+                      onClick={() => setIsCustomPersonaModalOpen(true)}
+                      className="mt-2 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      Create Your First Commentator
+                    </button>
+                  </div>
+                )}
               </div>
               
               <div>
@@ -264,8 +318,9 @@ export default function Home() {
                   required
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Paste the full article content to be rewritten in {currentPersona.name}
-                  &#39;s style.
+                  {currentPersona 
+                    ? `Paste the full article content to be rewritten in ${currentPersona.name}'s style.`
+                    : 'Paste the full article content to be rewritten.'}
                 </p>
               </div>
               
@@ -287,8 +342,8 @@ export default function Home() {
               <div className="flex justify-center">
                 <button
                   type="submit"
-                  disabled={isLoading}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50"
+                  disabled={isLoading || !selectedPersona}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:transform-none disabled:shadow-none"
                 >
                   {isLoading ? (
                     <div className="flex items-center">
@@ -299,7 +354,9 @@ export default function Home() {
                       Rewriting...
                     </div>
                   ) : (
-                    `Rewrite in ${currentPersona.name}'s Style`
+                    currentPersona 
+                      ? `Rewrite in ${currentPersona.name}'s Style` 
+                      : 'Create a Commentator First'
                   )}
                 </button>
               </div>
@@ -310,8 +367,33 @@ export default function Home() {
         {/* Custom Persona Modal */}
         <CustomPersonaModal 
           isOpen={isCustomPersonaModalOpen}
-          onClose={() => setIsCustomPersonaModalOpen(false)}
-          onSave={handleSaveCustomPersona}
+          onClose={() => {
+            // Only show warning if there are no personas and user is trying to close the modal
+            if (customPersonas.length === 0) {
+              // Instead of an alert, we'll keep the modal open for first-time users
+              // No alert needed - just don't close the modal if no personas exist
+              return;
+            }
+            
+            // Close the modal if we have at least one persona
+            setIsCustomPersonaModalOpen(false);
+          }}
+          onSave={(newPersona) => {
+            // Save the new persona
+            const updatedPersonas = [...customPersonas, newPersona];
+            setCustomPersonas(updatedPersonas);
+            
+            // Save to localStorage
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('customPersonas', JSON.stringify(updatedPersonas));
+            }
+            
+            // Auto-select the newly created persona
+            setSelectedPersona(newPersona.id);
+            
+            // Close the modal after successful creation
+            setIsCustomPersonaModalOpen(false);
+          }}
         />
         
         {/* Footer */}

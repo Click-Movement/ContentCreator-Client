@@ -10,11 +10,7 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { PersonaType } from '@/lib/aiPersonaRewriter';
-import CustomPersonaWizard from './persona-question';
+import CustomPersonaWizard from "@/components/persona-question";
 
 type CustomPersona = {
   id: string;
