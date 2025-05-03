@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { rewriteContent } from '@/lib/contentRewriter';
+import { rewriteContent, SeoOptions } from '@/lib/contentRewriter';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,15 +13,17 @@ export async function POST(request: NextRequest) {
     }
     
     // Rewrite content with SEO optimization
+    const seoOptions: SeoOptions = {
+      maintainLength: true,
+      seoKeywords: [],
+    };
+    
     const rewrittenContent = await rewriteContent(
       title,
       content,
-      '', // No meta description since we're using direct input
-      '', // No URL since we're not fetching from a URL
-      {
-        maintainLength: true, // Ensure we maintain the original length as requested
-        seoKeywords: [], // No keywords needed
-      }
+      '', // metaDescription
+      '', // url
+      seoOptions
     );
     
     return NextResponse.json(rewrittenContent);

@@ -50,12 +50,16 @@ export async function POST(request: NextRequest) {
     
     // Create a draft post
     try {
-      const post = await wp.posts().create({
+      const postData = {
         title: rewrittenContent.title,
-        content: rewrittenContent.htmlContent,
+        // Use content first, with htmlContent as a fallback
+        content: rewrittenContent.htmlContent || rewrittenContent.content,
+        // Use metaDescription directly, or undefined if not available
         excerpt: rewrittenContent.metaDescription,
         status: 'draft', // Set as draft as requested
-      });
+      };
+
+      const post = await wp.posts().create(postData);
       
       return NextResponse.json({
         success: true,

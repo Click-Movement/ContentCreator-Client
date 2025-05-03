@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { rewriteInPersonaStyle, PersonaType, AIModelType } from '@/lib/aiPersonaRewriter';
+import { rewriteContent, AIModelType } from '@/lib/contentRewriter';
+import { getCustomPersonaById } from '@/types/personas';
 
-// Add this export to use Edge Runtime
+// Use Edge Runtime for faster response
 export const runtime = 'edge';
 
 export async function POST(request: NextRequest) {
   try {
-    const { title, content, model, customInstructions } = await request.json();
+    const { title, content, personaId, model, customInstructions } = await request.json();
     
     if (!title || !content) {
       return NextResponse.json(
@@ -15,9 +16,9 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    if (!customInstructions) {
+    if (!personaId) {
       return NextResponse.json(
-        { error: 'Custom instructions are required' },
+        { error: 'Persona ID is required' },
         { status: 400 }
       );
     }
@@ -51,17 +52,39 @@ export async function POST(request: NextRequest) {
       claude: claudeKey || null
     };
     
-    // Use custom persona type with custom instructions
+    // Handle different persona types (predefined or custom)
+    let instructions: string | undefined = undefined;
+    
+    // If this is a custom persona (not one of the predefined ones)
+    if (personaId.startsWith('custom_')) {
+      // For custom personas, we need custom instructions
+      if (!customInstructions) {
+        // If no instructions were explicitly provided, try to find the saved custom persona
+        const customPersona = await getCustomPersonaById(personaId);
+        if (customPersona) {
+          instructions = customPersona.instructions;
+        } else {
+          return NextResponse.json(
+            { error: 'Custom persona not found and no instructions were provided' },
+            { status: 400 }
+          );
+        }
+      } else {
+        instructions = customInstructions;
+      }
+    }
+    
+    // Use persona ID to rewrite content with a timeout
     let rewrittenContent;
     try {
       rewrittenContent = await Promise.race([
-        rewriteInPersonaStyle(
-          title, 
-          content, 
-          'custom' as PersonaType, 
+        rewriteContent(
+          title,
+          content,
+          personaId,
           selectedModel as AIModelType,
-          serverApiKeys, 
-          customInstructions
+          instructions,
+          serverApiKeys
         ),
         new Promise((_, reject) => 
           setTimeout(() => reject(new Error('API call timed out')), 60000)
@@ -89,7 +112,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       title: responseTitle,
-      content: responseContent
+      content: responseContent,
+      persona: personaId
     });
     
   } catch (error) {

@@ -4,6 +4,8 @@ import { Anthropic } from '@anthropic-ai/sdk';
 export interface RewrittenContent {
   title: string;
   content: string;
+  htmlContent?: string;
+  metaDescription?: string;
 }
 
 // Update PersonaType to only have 'custom'
