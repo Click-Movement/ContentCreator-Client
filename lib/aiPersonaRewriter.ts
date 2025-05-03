@@ -149,131 +149,131 @@ async function rewriteWithGPT(
   }
 }
 
-// Add this utility function to provide better fallbacks
-function extractUsableContent(output: string, originalTitle: string): RewrittenContent {
-  // Default fallbacks
-  let title = originalTitle || "Rewritten Article";
-  let content = "<p>Content could not be properly generated.</p>";
+// // Add this utility function to provide better fallbacks
+// function extractUsableContent(output: string, originalTitle: string): RewrittenContent {
+//   // Default fallbacks
+//   let title = originalTitle || "Rewritten Article";
+//   let content = "<p>Content could not be properly generated.</p>";
   
-  // If we have output, try to use it even if improperly formatted
-  if (output && output.trim() !== "") {
-    const lines = output.split(/\n|\r|\r\n/).filter(line => line.trim() !== "");
+//   // If we have output, try to use it even if improperly formatted
+//   if (output && output.trim() !== "") {
+//     const lines = output.split(/\n|\r|\r\n/).filter(line => line.trim() !== "");
     
-    // Use the first non-empty line as the title if we don't have one
-    if (lines.length > 0) {
-      title = lines[0].trim();
+//     // Use the first non-empty line as the title if we don't have one
+//     if (lines.length > 0) {
+//       title = lines[0].trim();
       
-      // Remove markers if they exist
-      title = title.replace(/^REWRITTEN_TITLE:?\s*/i, "");
+//       // Remove markers if they exist
+//       title = title.replace(/^REWRITTEN_TITLE:?\s*/i, "");
       
-      // Limit title length
-      if (title.length > 120) {
-        title = title.substring(0, 117) + "...";
-      }
-    }
+//       // Limit title length
+//       if (title.length > 120) {
+//         title = title.substring(0, 117) + "...";
+//       }
+//     }
     
-    // Use the rest as content
-    if (lines.length > 1) {
-      const contentLines = lines.slice(1).filter(line => 
-        !line.trim().toLowerCase().startsWith("rewritten_title:") && 
-        !line.trim().toLowerCase().startsWith("rewritten_content:")
-      );
+//     // Use the rest as content
+//     if (lines.length > 1) {
+//       const contentLines = lines.slice(1).filter(line => 
+//         !line.trim().toLowerCase().startsWith("rewritten_title:") && 
+//         !line.trim().toLowerCase().startsWith("rewritten_content:")
+//       );
       
-      if (contentLines.length > 0) {
-        content = contentLines.join("\n\n");
+//       if (contentLines.length > 0) {
+//         content = contentLines.join("\n\n");
         
-        // Add HTML paragraphs if needed
-        if (!content.includes("<p>")) {
-          content = content.split(/\n\n+/).map(p => `<p>${p.trim()}</p>`).join("");
-        }
-      }
-    } else {
-      // If there's only one line, use it as content
-      content = `<p>${output.trim()}</p>`;
-    }
-  }
+//         // Add HTML paragraphs if needed
+//         if (!content.includes("<p>")) {
+//           content = content.split(/\n\n+/).map(p => `<p>${p.trim()}</p>`).join("");
+//         }
+//       }
+//     } else {
+//       // If there's only one line, use it as content
+//       content = `<p>${output.trim()}</p>`;
+//     }
+//   }
   
-  // Remove any HTML from title
-  title = title.replace(/<\/?[^>]+(>|$)/g, "");
+//   // Remove any HTML from title
+//   title = title.replace(/<\/?[^>]+(>|$)/g, "");
   
-  return { title, content };
-}
+//   return { title, content };
+// }
 
-// Improve HTML formatting function with better error handling
-function ensureHtmlFormatting(content: string): string {
-  try {
-    // Remove any markdown style formatting that might be present
-    let processedContent = content
-      .replace(/^\s*```html\s*/, '') // Remove opening HTML code block markers
-      .replace(/\s*```\s*$/, '');   // Remove closing code block markers
+// // Improve HTML formatting function with better error handling
+// function ensureHtmlFormatting(content: string): string {
+//   try {
+//     // Remove any markdown style formatting that might be present
+//     let processedContent = content
+//       .replace(/^\s*```html\s*/, '') // Remove opening HTML code block markers
+//       .replace(/\s*```\s*$/, '');   // Remove closing code block markers
     
-    // Check if content already has HTML structure
-    const hasHtmlTags = /<\/?[a-z][\s\S]*>/i.test(processedContent);
+//     // Check if content already has HTML structure
+//     const hasHtmlTags = /<\/?[a-z][\s\S]*>/i.test(processedContent);
     
-    // If it already has paragraph tags, just return it
-    if (processedContent.includes('<p>') && processedContent.includes('</p>')) {
-      return processedContent;
-    }
+//     // If it already has paragraph tags, just return it
+//     if (processedContent.includes('<p>') && processedContent.includes('</p>')) {
+//       return processedContent;
+//     }
     
-    // If it has other HTML tags but no paragraph tags
-    if (hasHtmlTags) {
-      // Check if it's missing a wrapping paragraph
-      if (!/<\/?p[\s>]/i.test(processedContent)) {
-        processedContent = `<p>${processedContent}</p>`;
-      }
-      return processedContent;
-    }
+//     // If it has other HTML tags but no paragraph tags
+//     if (hasHtmlTags) {
+//       // Check if it's missing a wrapping paragraph
+//       if (!/<\/?p[\s>]/i.test(processedContent)) {
+//         processedContent = `<p>${processedContent}</p>`;
+//       }
+//       return processedContent;
+//     }
     
-    // No HTML - split by double newlines and wrap paragraphs
-    const paragraphs = processedContent.split(/\n\n+/);
-    return paragraphs
-      .filter(p => p.trim() !== '') // Remove empty paragraphs
-      .map(p => `<p>${p.trim()}</p>`)
-      .join('\n');
-  } catch (error) {
-    console.error('Error formatting HTML:', error);
-    // Fallback - wrap the whole content in paragraph tags
-    return `<p>${content}</p>`;
-  }
-}
+//     // No HTML - split by double newlines and wrap paragraphs
+//     const paragraphs = processedContent.split(/\n\n+/);
+//     return paragraphs
+//       .filter(p => p.trim() !== '') // Remove empty paragraphs
+//       .map(p => `<p>${p.trim()}</p>`)
+//       .join('\n');
+//   } catch (error) {
+//     console.error('Error formatting HTML:', error);
+//     // Fallback - wrap the whole content in paragraph tags
+//     return `<p>${content}</p>`;
+//   }
+// }
 
 // Function to calculate target length
-function calculateTargetLength(originalContent: string): number {
-  // Count words in original content
-  const wordCount = originalContent.split(/\s+/).length;
+// function calculateTargetLength(originalContent: string): number {
+//   // Count words in original content
+//   const wordCount = originalContent.split(/\s+/).length;
   
-  // Add natural variation with these rules:
-  // - Very short content (< 100 words): Allow 10-30% expansion
-  // - Short content (100-300 words): Allow 5-20% variation
-  // - Medium content (300-800 words): Allow 0-15% variation
-  // - Long content (800+ words): Aim for slight compression (0-10% reduction)
+//   // Add natural variation with these rules:
+//   // - Very short content (< 100 words): Allow 10-30% expansion
+//   // - Short content (100-300 words): Allow 5-20% variation
+//   // - Medium content (300-800 words): Allow 0-15% variation
+//   // - Long content (800+ words): Aim for slight compression (0-10% reduction)
   
-  let minMultiplier = 1.0;
-  let maxMultiplier = 1.0;
+//   let minMultiplier = 1.0;
+//   let maxMultiplier = 1.0;
   
-  if (wordCount < 100) {
-    minMultiplier = 1.1;
-    maxMultiplier = 1.3;
-  } else if (wordCount < 300) {
-    minMultiplier = 0.95;
-    maxMultiplier = 1.2;
-  } else if (wordCount < 800) {
-    minMultiplier = 0.90;
-    maxMultiplier = 1.15;
-  } else {
-    minMultiplier = 0.90;
-    maxMultiplier = 1.0;
-  }
+//   if (wordCount < 100) {
+//     minMultiplier = 1.1;
+//     maxMultiplier = 1.3;
+//   } else if (wordCount < 300) {
+//     minMultiplier = 0.95;
+//     maxMultiplier = 1.2;
+//   } else if (wordCount < 800) {
+//     minMultiplier = 0.90;
+//     maxMultiplier = 1.15;
+//   } else {
+//     minMultiplier = 0.90;
+//     maxMultiplier = 1.0;
+//   }
   
-  // Apply random variation within our determined range
-  const multiplier = minMultiplier + Math.random() * (maxMultiplier - minMultiplier);
+//   // Apply random variation within our determined range
+//   const multiplier = minMultiplier + Math.random() * (maxMultiplier - minMultiplier);
   
-  // Calculate target tokens (approximately 0.75 tokens per word)
-  const targetWords = Math.round(wordCount * multiplier);
-  const targetTokens = Math.round(targetWords / 0.75);
+//   // Calculate target tokens (approximately 0.75 tokens per word)
+//   const targetWords = Math.round(wordCount * multiplier);
+//   const targetTokens = Math.round(targetWords / 0.75);
   
-  return targetTokens;
-}
+//   return targetTokens;
+// }
 
 // Function to create custom persona prompts
 function createCustomPersonaPrompt(title: string, content: string, customInstructions: string): string {

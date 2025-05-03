@@ -111,19 +111,19 @@ export default function Home() {
     }
   };
 
-  // Handle saving new custom persona
-  const handleSaveCustomPersona = (persona: CustomPersona) => {
-    const updatedPersonas = [...customPersonas, persona];
-    setCustomPersonas(updatedPersonas);
+  // // Handle saving new custom persona
+  // const handleSaveCustomPersona = (persona: CustomPersona) => {
+  //   const updatedPersonas = [...customPersonas, persona];
+  //   setCustomPersonas(updatedPersonas);
     
-    // Save to localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('customPersonas', JSON.stringify(updatedPersonas));
-    }
+  //   // Save to localStorage
+  //   if (typeof window !== 'undefined') {
+  //     localStorage.setItem('customPersonas', JSON.stringify(updatedPersonas));
+  //   }
     
-    // Auto-select the newly created persona
-    setSelectedPersona(persona.id);
-  };
+  //   // Auto-select the newly created persona
+  //   setSelectedPersona(persona.id);
+  // };
   
   // Handle deleting a custom persona
   const handleDeletePersona = (personaId: string) => {
@@ -238,7 +238,7 @@ export default function Home() {
                   </div>
                 ) : (
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
-                    <p className="text-gray-500">You don't have any custom commentators yet.</p>
+                    <p className="text-gray-500">You don not have any custom commentators yet.</p>
                     <button
                       type="button"
                       onClick={() => setIsCustomPersonaModalOpen(true)}

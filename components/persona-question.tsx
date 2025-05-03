@@ -15,7 +15,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { CheckCircle } from "lucide-react";
-import { PersonaType } from '@/lib/aiPersonaRewriter';
 
 type CustomPersona = {
   id: string;
@@ -78,8 +77,8 @@ export default function CustomPersonaWizard({ isOpen, onClose, onSave }: CustomP
   // Helper function to extract key phrases from the collected data
   const generateInstructions = () => {
     const selectedFeelings = Object.entries(audienceFeelingOptions)
-      .filter(([_, selected]) => selected)
-      .map(([feeling, _]) => feeling)
+      .filter(([, selected]) => selected)
+      .map(([feeling,]) => feeling)
       .join(', ');
       
     return `
@@ -258,7 +257,7 @@ When rewriting content, use a tone that embodies these characteristics and mimic
           {currentStep === 'basic-info' && (
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Basic Information</h3>
-              <p className="text-sm text-gray-500">Let's start with the fundamentals of your custom commentator.</p>
+              <p className="text-sm text-gray-500">Let us start with the fundamentals of your custom commentator.</p>
               
               <div className="space-y-2">
                 <Label htmlFor="name">Persona Name <span className="text-red-500">*</span></Label>
@@ -317,7 +316,7 @@ When rewriting content, use a tone that embodies these characteristics and mimic
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Audience Response</h3>
               <p className="text-sm text-gray-500">
-                How should readers feel after reading content in this persona's style?
+                How should readers feel after reading content in this personas style?
               </p>
               
               <div className="grid grid-cols-2 gap-3">
@@ -417,7 +416,7 @@ When rewriting content, use a tone that embodies these characteristics and mimic
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Language Preferences</h3>
               <p className="text-sm text-gray-500">
-                Identify specific language patterns that define this persona's style.
+                Identify specific language patterns that define this personas style.
               </p>
               
               <div className="space-y-2">
@@ -430,7 +429,7 @@ When rewriting content, use a tone that embodies these characteristics and mimic
                   rows={4}
                 />
                 <p className="text-xs text-gray-500">
-                  These signature phrases help make the content immediately recognizable as this person's voice.
+                  These signature phrases help make the content immediately recognizable as this persons voice.
                 </p>
               </div>
               
@@ -444,7 +443,7 @@ When rewriting content, use a tone that embodies these characteristics and mimic
                   rows={3}
                 />
                 <p className="text-xs text-gray-500">
-                  Are there expressions or word choices that would feel "off-brand" for this persona?
+                  Are there expressions or word choices that would feel off-brand for this persona?
                 </p>
               </div>
             </div>
@@ -455,7 +454,7 @@ When rewriting content, use a tone that embodies these characteristics and mimic
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Writing Style</h3>
               <p className="text-sm text-gray-500">
-                Define the technical aspects of this persona's writing approach.
+                Define the technical aspects of this personas writing approach.
               </p>
               
               <div className="space-y-2">
@@ -533,7 +532,7 @@ When rewriting content, use a tone that embodies these characteristics and mimic
                 <h3 className="text-lg font-medium">Ready to Create</h3>
               </div>
               <p className="text-sm text-gray-500">
-                We're ready to create your custom commentator persona with the following details:
+                We are ready to create your custom commentator persona with the following details:
               </p>
               
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-3">
@@ -562,8 +561,8 @@ When rewriting content, use a tone that embodies these characteristics and mimic
                   <p className="text-sm font-medium text-gray-600">Audience Response</p>
                   <p>
                     {Object.entries(audienceFeelingOptions)
-                      .filter(([_, selected]) => selected)
-                      .map(([feeling, _]) => feeling.charAt(0).toUpperCase() + feeling.slice(1))
+                      .filter(([, selected]) => selected)
+                      .map(([feeling,]) => feeling.charAt(0).toUpperCase() + feeling.slice(1))
                       .join(', ')}
                     {audienceFeeling && ', ' + audienceFeeling}
                   </p>

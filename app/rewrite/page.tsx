@@ -38,7 +38,7 @@ export default function RewritePage() {
         try {
           const parsedContent = JSON.parse(savedContent);
           setRewrittenContent(parsedContent);
-        } catch (err) {
+        } catch  {
           setError('Failed to parse saved content.');
         }
       } else {
@@ -165,7 +165,7 @@ export default function RewritePage() {
                     <h1 className="text-2xl font-bold text-gray-900">{rewrittenContent?.title}</h1>
                     <div>
                       <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-0.5 text-sm font-medium text-blue-800">
-                        {personaName}'s Style
+                        {personaName}s Style
                       </span>
                     </div>
                   </div>
