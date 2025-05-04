@@ -24,8 +24,9 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, Mail, Lock, ArrowRight, Loader2, GithubIcon } from "lucide-react"
 import Link from "next/link"
+import { motion } from "framer-motion"
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -36,6 +37,7 @@ export function SigninForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(false);
 
   // Track mouse position for glow effect
   useEffect(() => {
@@ -77,42 +79,93 @@ export function SigninForm() {
   }
 
   return (
-    <div className="relative flex items-center justify-center min-h-screen">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="relative flex items-center justify-center min-h-screen px-4"
+    >
       {/* Animated background */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-black"></div>
         
         {/* Animated orbs */}
-        <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-blue-700 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob"></div>
-        <div className="absolute top-1/3 right-1/4 w-72 h-72 bg-indigo-700 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute bottom-1/4 right-1/3 w-64 h-64 bg-purple-700 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob animation-delay-4000"></div>
+        <motion.div 
+          animate={{ 
+            x: [0, 30, -20, 0],
+            y: [0, -50, 20, 0],
+            scale: [1, 1.1, 0.9, 1]
+          }}
+          transition={{ 
+            duration: 20,
+            repeat: Infinity,
+            repeatType: "loop"
+          }}
+          className="absolute top-1/4 left-1/4 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-20"
+        ></motion.div>
+        <motion.div 
+          animate={{ 
+            x: [0, -40, 20, 0],
+            y: [0, 30, -40, 0],
+            scale: [1, 0.9, 1.1, 1]
+          }}
+          transition={{ 
+            duration: 15,
+            repeat: Infinity,
+            repeatType: "loop",
+            delay: 1
+          }}
+          className="absolute top-1/3 right-1/4 w-72 h-72 bg-indigo-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-20"
+        ></motion.div>
+        <motion.div 
+          animate={{ 
+            x: [0, 20, -30, 0],
+            y: [0, -30, -10, 0],
+            scale: [1, 1.1, 0.8, 1]
+          }}
+          transition={{ 
+            duration: 18,
+            repeat: Infinity,
+            repeatType: "loop",
+            delay: 2
+          }}
+          className="absolute bottom-1/4 right-1/3 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-20"
+        ></motion.div>
       </div>
 
       {/* Mouse glow effect */}
       <div 
         className="pointer-events-none fixed inset-0 z-10 transition-opacity duration-300"
         style={{
-          background: `radial-gradient(600px at ${mousePosition.x}px ${mousePosition.y}px, rgba(79, 70, 229, 0.10), transparent)`,
+          background: `radial-gradient(600px at ${mousePosition.x}px ${mousePosition.y}px, rgba(99, 102, 241, 0.15), transparent 80%)`,
         }}
       />
 
       {/* Card content */}
-      <Card className="relative z-20 w-full max-w-md border-gray-800 bg-gray-950/90 text-gray-100 backdrop-blur-sm shadow-xl mx-4">
+      <Card className="relative z-20 w-full max-w-md border border-indigo-500/10 bg-gray-950/80 text-gray-100 backdrop-blur-md shadow-2xl">
+        <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-indigo-500 to-transparent"></div>
+        
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-white">Welcome back</CardTitle>
+          <CardTitle className="text-2xl font-bold text-white tracking-tight">Welcome back</CardTitle>
           <CardDescription className="text-gray-400">
-            Sign in to your account to continue
+            Sign in to access Content Creator
           </CardDescription>
         </CardHeader>
+        
         <CardContent>
           {loginError && (
-            <Alert variant="destructive" className="bg-red-900/80 border-red-800 backdrop-blur-sm mb-6">
-              <AlertCircle className="h-4 w-4 text-red-300" />
-              <AlertTitle className="text-red-100">Authentication failed</AlertTitle>
-              <AlertDescription className="text-red-200">
-                {loginError}
-              </AlertDescription>
-            </Alert>
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <Alert variant="destructive" className="bg-red-900/30 border border-red-500/50 backdrop-blur-sm mb-6">
+                <AlertCircle className="h-4 w-4 text-red-300" />
+                <AlertTitle className="text-red-100 font-medium">Authentication failed</AlertTitle>
+                <AlertDescription className="text-red-200">
+                  {loginError}
+                </AlertDescription>
+              </Alert>
+            </motion.div>
           )}
 
           <Form {...form}>
@@ -124,18 +177,22 @@ export function SigninForm() {
                   <FormItem>
                     <FormLabel className="text-gray-300">Email</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="you@example.com" 
-                        type="email"
-                        className="bg-gray-900/70 border-gray-700 text-gray-100 focus-visible:ring-blue-600 transition-all duration-300 hover:bg-gray-800 hover:border-blue-500 hover:shadow-[0_0_10px_rgba(59,130,246,0.3)]" 
-                        disabled={isLoading} 
-                        {...field} 
-                      />
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                        <Input 
+                          placeholder="you@example.com" 
+                          type="email"
+                          className="pl-10 bg-gray-900/80 border-gray-800 text-gray-100 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all duration-300" 
+                          disabled={isLoading} 
+                          {...field} 
+                        />
+                      </div>
                     </FormControl>
-                    <FormMessage className="text-red-400" />
+                    <FormMessage className="text-red-400 text-xs" />
                   </FormItem>
                 )}
               />
+              
               <FormField
                 control={form.control}
                 name="password"
@@ -143,64 +200,91 @@ export function SigninForm() {
                   <FormItem>
                     <div className="flex items-center justify-between">
                       <FormLabel className="text-gray-300">Password</FormLabel>
-                      <Link href="/auth/forget-password" className="text-sm text-blue-400 hover:underline">
+                      <Link href="/auth/forget-password" className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors">
                         Forgot password?
                       </Link>
                     </div>
                     <FormControl>
-                      <Input 
-                        placeholder="••••••••" 
-                        type="password"
-                        className="bg-gray-900/70 border-gray-700 text-gray-100 focus-visible:ring-blue-600 transition-all duration-300 hover:bg-gray-800 hover:border-blue-500 hover:shadow-[0_0_10px_rgba(59,130,246,0.3)]" 
-                        disabled={isLoading} 
-                        {...field} 
-                      />
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                        <Input 
+                          placeholder="••••••••" 
+                          type="password"
+                          className="pl-10 bg-gray-900/80 border-gray-800 text-gray-100 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all duration-300" 
+                          disabled={isLoading} 
+                          {...field} 
+                        />
+                      </div>
                     </FormControl>
-                    <FormMessage className="text-red-400" />
+                    <FormMessage className="text-red-400 text-xs" />
                   </FormItem>
                 )}
               />
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="remember-me"
+                  checked={rememberMe}
+                  onChange={() => setRememberMe(!rememberMe)}
+                  className="h-4 w-4 rounded border-gray-700 bg-gray-900 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-gray-900"
+                />
+                <label htmlFor="remember-me" className="text-sm text-gray-400">
+                  Remember me for 30 days
+                </label>
+              </div>
+              
               <Button 
                 type="submit" 
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-all duration-300 hover:shadow-[0_0_15px_rgba(59,130,246,0.5)]" 
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white transition-all duration-300 group relative overflow-hidden shadow-[0_0_10px_rgba(99,102,241,0.2)]" 
                 disabled={isLoading}
               >
-                {isLoading ? "Signing in..." : "Sign in"}
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Signing In...
+                    </>
+                  ) : (
+                    <>
+                      Sign In
+                      <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                    </>
+                  )}
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-800 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </Button>
+              
+              <div className="relative flex items-center justify-center my-2">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-800"></div>
+                </div>
+                <div className="relative px-4 bg-gray-950/80 text-xs text-gray-400">or continue with</div>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-3">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="bg-gray-900/50 border-gray-800 text-gray-300 hover:bg-gray-800 hover:text-gray-100 transition-all duration-300"
+                >
+                  <GithubIcon className="mr-2 h-4 w-4" />
+                  GitHub
+                </Button>
+              </div>
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="flex flex-col space-y-4 border-t border-gray-800 pt-4">
+        
+        <CardFooter className="flex flex-col space-y-4 border-t border-gray-800/50 pt-4">
           <div className="text-center text-gray-400 text-sm">
-            Don not have an account?{" "}
-            <Link href="/auth/signup" className="text-blue-400 hover:underline">
-              Create an account
+            Dont have an account?{" "}
+            <Link href="/auth/signup" className="text-indigo-400 hover:text-indigo-300 transition-colors font-medium">
+              Create an oaccount →
             </Link>
           </div>
         </CardFooter>
       </Card>
-
-      {/* CSS for animations */}
-      <style jsx global>{`
-        @keyframes blob {
-          0% { transform: translate(0px, 0px) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-          100% { transform: translate(0px, 0px) scale(1); }
-        }
-
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-      `}</style>
-    </div>
+    </motion.div>
   );
 }

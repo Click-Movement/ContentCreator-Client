@@ -1,8 +1,8 @@
 import { SigninForm } from "@/components/auth/SigninForm"
 
 export const metadata = {
-  title: 'Sign In | Your App Name',
-  description: 'Sign in to your account',
+  title: 'Sign In | Content Creator',
+  description: 'Sign in to your Content Creator account'
 }
 
 export default function SigninPage() {
