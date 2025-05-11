@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rewriteContent, AIModelType } from '@/lib/contentRewriter';
-import { getCustomPersonaById } from '@/types/personas';
+import { getCustomPersonaByUsingId } from '@/lib/customPersonaRewriter'; // Fixed import
 
 // Use Edge Runtime for faster response
 export const runtime = 'edge';
@@ -52,15 +52,14 @@ export async function POST(request: NextRequest) {
       claude: claudeKey || null
     };
     
-    // Handle different persona types (predefined or custom)
-    let instructions: string | undefined = undefined;
+    let instructions = undefined;
     
     // If this is a custom persona (not one of the predefined ones)
     if (personaId.startsWith('custom_')) {
-      // For custom personas, we need custom instructions
+      // If no instructions were explicitly provided, try to find the saved custom persona
       if (!customInstructions) {
-        // If no instructions were explicitly provided, try to find the saved custom persona
-        const customPersona = await getCustomPersonaById(personaId);
+        const customPersona = await getCustomPersonaByUsingId(personaId);
+        
         if (customPersona) {
           instructions = customPersona.instructions;
         } else {
@@ -74,68 +73,29 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Use persona ID to rewrite content with a timeout
-    let rewrittenContent;
-    try {
-      rewrittenContent = await Promise.race([
-        rewriteContent(
-          title,
-          content,
-          personaId,
-          selectedModel as AIModelType,
-          instructions,
-          serverApiKeys
-        ),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('API call timed out')), 60000)
-        ) as Promise<never>
-      ]);
-    } catch (error) {
-      console.error("Error during rewrite:", error);
-      
-      // Provide a fallback response instead of erroring
-      rewrittenContent = {
-        title: title || "Rewrite Attempt",
-        content: `<p>We encountered an issue while trying to rewrite your content.</p>
-                  <p>The AI service responded with: "${error instanceof Error ? error.message : 'Unknown error'}"</p>
-                  <p>Please try again with different content or instructions.</p>`
-      };
-    }
-    
-    // Always ensure we have some sort of title and content
-    const responseTitle = rewrittenContent?.title || title || "Rewritten Article";
-    const responseContent = rewrittenContent?.content || 
-      `<p>No content was generated. Please try again with different instructions.</p>`;
-    
-    console.log("Rewrite complete - sending response");
+    // Use persona ID to rewrite content
+    const rewrittenContent = await rewriteContent(
+      title,
+      content,
+      personaId,
+      selectedModel as AIModelType,
+      instructions,
+      serverApiKeys
+    );
     
     return NextResponse.json({
       success: true,
-      title: responseTitle,
-      content: responseContent,
+      title: rewrittenContent.title,
+      content: rewrittenContent.content,
       persona: personaId
     });
     
   } catch (error) {
     console.error('Error in API route:', error);
     
-    // Check for specific AI-related errors
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : 'Failed to rewrite content';
-    
-    // Handle rate limiting, quota errors, or timeouts specifically
-    const isRateLimitError = errorMessage.toLowerCase().includes('rate limit') || 
-                           errorMessage.toLowerCase().includes('quota');
-    const isTimeoutError = errorMessage.toLowerCase().includes('timed out');
-    
     return NextResponse.json(
-      { 
-        error: errorMessage,
-        isRateLimitError,
-        isTimeoutError
-      },
-      { status: isRateLimitError ? 429 : isTimeoutError ? 504 : 500 }
+      { error: error instanceof Error ? error.message : 'Failed to rewrite content' },
+      { status: 500 }
     );
   }
 }

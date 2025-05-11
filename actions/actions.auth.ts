@@ -1,8 +1,9 @@
 'use server'
 
+import { createClient } from '@/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/supabase/server'
+// import { createClient } from '@/supabase/server'
 
 export async function login(email: string, password: string) {
   const supabase = await createClient()

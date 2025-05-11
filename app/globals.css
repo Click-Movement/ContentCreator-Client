@@ -297,3 +297,36 @@
   66% { transform: translate(-20px, 20px) scale(0.9); }
   100% { transform: translate(0px, 0px) scale(1); }
 }
+
+@keyframes spinner {
+  0% {
+    transform: rotate(0deg);
+    border-width: 4px;
+  }
+  50% {
+    transform: rotate(180deg);
+    border-width: 2px;
+  }
+  100% {
+    transform: rotate(360deg);
+    border-width: 4px;
+  }
+}
+
+.spinner-animation {
+  animation: spinner 1.5s linear infinite;
+}
+
+/* Inner spinner with advanced animation */
+.spinner-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  border: 4px solid transparent;
+  border-top-color: #3b82f6;
+  border-right-color: #3b82f6;
+  animation: spinner 1.5s linear infinite;
+}

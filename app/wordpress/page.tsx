@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Persona, personas, PersonaType } from '@/types/personas';
+import {  personas } from '@/types/personas';
 import Header from '@/components/header';
+import { PersonaType } from '@/lib/aiPersonaRewriter';
 // import { personas, PersonaType } from '@/types/personas';
 
 export default function WordPressPage() {
@@ -169,9 +170,14 @@ export default function WordPressPage() {
     }
   };
 
+
+
+
+  
   // Find the persona name if available
   const personaName = rewrittenContent?.persona 
-    ? (personas.find((p:Persona) => p.id === rewrittenContent.persona)?.name || 'Selected Commentator')
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    ? (personas.find((p:any) => p.id === rewrittenContent.persona)?.name || 'Selected Commentator')
     : 'Selected Commentator';
 
   return (

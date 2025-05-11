@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { getCustomPersonaById } from '@/types/personas';
+// import { getCustomPersonaById } from '@/types/personas';
+import { getCustomPersonaByUsingId } from '@/lib/customPersonaRewriter';
 
 interface RewriteOptions {
   title: string;
@@ -35,7 +36,7 @@ export function usePersonaRewriter() {
       
       // If this is a custom persona, add its instructions
       if (personaId.startsWith('custom_')) {
-        const customPersona = getCustomPersonaById(personaId);
+        const customPersona = await getCustomPersonaByUsingId(personaId);
         
         if (customPersona) {
           payload.customInstructions = customPersona.instructions;

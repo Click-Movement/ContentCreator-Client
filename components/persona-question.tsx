@@ -15,18 +15,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { CheckCircle } from "lucide-react";
+// import { saveCustomPersona } from '@/lib/customPersonaRewriter';
 
 type CustomPersona = {
   id: string;
   name: string;
   description: string;
   instructions: string;
+  user_id: string; // Add user_id to CustomPersona type
 };
 
 interface CustomPersonaWizardProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (persona: CustomPersona) => void;
+  userId: string; // Make sure this prop is required
 }
 
 // Steps in the wizard
@@ -39,7 +42,12 @@ type WizardStep =
   | 'target-reader'
   | 'review';
 
-export default function CustomPersonaWizard({ isOpen, onClose, onSave }: CustomPersonaWizardProps) {
+export default function CustomPersonaWizard({ 
+  isOpen, 
+  onClose, 
+  onSave,
+  userId 
+}: CustomPersonaWizardProps) {
   // Basic info
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
@@ -49,7 +57,16 @@ export default function CustomPersonaWizard({ isOpen, onClose, onSave }: CustomP
   
   // Audience feeling
   const [audienceFeeling, setAudienceFeeling] = useState('');
-  const [audienceFeelingOptions, setAudienceFeelingOptions] = useState({
+  type AudienceFeelingOptions = {
+    inspired: boolean;
+    motivated: boolean;
+    informed: boolean;
+    entertained: boolean;
+    persuaded: boolean;
+    curious: boolean;
+    connected: boolean;
+  };
+  const [audienceFeelingOptions, setAudienceFeelingOptions] = useState<AudienceFeelingOptions>({
     inspired: false,
     motivated: false,
     informed: false,
@@ -74,33 +91,30 @@ export default function CustomPersonaWizard({ isOpen, onClose, onSave }: CustomP
   const [currentStep, setCurrentStep] = useState<WizardStep>('basic-info');
   const [error, setError] = useState<string | null>(null);
   
-  // Helper function to extract key phrases from the collected data
-  const generateInstructions = () => {
-    const selectedFeelings = Object.entries(audienceFeelingOptions)
-      .filter(([, selected]) => selected)
-      .map(([feeling,]) => feeling)
-      .join(', ');
-      
+  // Helper function to generate instructions from all inputs
+  const generateInstructions = (): string => {
     return `
-# Writing Style Guide for "${name}" ${role ? `(${role})` : ''}
+WRITING STYLE GUIDE:
+${name ? `PERSONA: ${name}` : ''}
+${role ? `ROLE: ${role}` : ''}
 
-## Voice & Tone
-- Make the audience feel: ${audienceFeeling || selectedFeelings || 'Not specified'}
-- Writing style: ${writingStylePreference || 'Not specified'}
-- Writing pet peeve to avoid: ${writingPetPeeve || 'Not specified'}
+${writingSamples ? `WRITING SAMPLES/STYLE REFERENCE:\n${writingSamples}` : ''}
 
-## Language Preferences
-- Phrases and language to use: ${phrases || 'Not specified'}
-- Language to avoid: ${avoidLanguage || 'Not specified'}
+${audienceFeeling ? `AUDIENCE FEELING: ${audienceFeeling}` : ''}
+${Object.keys(audienceFeelingOptions).filter(k => audienceFeelingOptions[k as keyof AudienceFeelingOptions]).length > 0 
+  ? `AUDIENCE SHOULD FEEL: ${Object.keys(audienceFeelingOptions)
+      .filter(k => audienceFeelingOptions[k as keyof AudienceFeelingOptions])
+      .join(', ')}` 
+  : ''}
 
-## Target Reader Profile
-${targetReader || 'General audience'}
+${phrases ? `KEY PHRASES TO USE:\n${phrases}` : ''}
+${avoidLanguage ? `LANGUAGE TO AVOID:\n${avoidLanguage}` : ''}
 
-## Writing Samples for Reference
-${writingSamples || 'No specific samples provided.'}
+${writingStylePreference ? `WRITING STYLE PREFERENCES:\n${writingStylePreference}` : ''}
+${writingPetPeeve ? `AVOID THESE WRITING PATTERNS:\n${writingPetPeeve}` : ''}
 
-When rewriting content, use a tone that embodies these characteristics and mimics the voice of ${name}. Be persuasive, clear, and maintain the political perspective of the original author while enhancing the style to match ${name}'s voice.
-    `.trim();
+${targetReader ? `TARGET READER:\n${targetReader}` : ''}
+`.trim();
   };
   
   // Handle next step
@@ -157,33 +171,42 @@ When rewriting content, use a tone that embodies these characteristics and mimic
   };
   
   // Final submit handler
-  const handleSubmit = () => {
-    // Create a unique ID based on name
-    const id = 'custom_' + name.toLowerCase().replace(/\s+/g, '_');
+  async function handleReviewAndSave() {
+    if (!userId) {
+      console.error("Cannot save persona: No user ID provided");
+      setError("User authentication required. Please log in again.");
+      return;
+    }
     
-    // Generate the full instructions
+    // Generate a unique ID for the persona
+    const id = `custom_${name.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`;
+    
+    // Generate the consolidated instructions
     const instructions = generateInstructions();
     
-    // Create description based on role
-    const description = role ? `${role}` : 'Custom commentator';
-    
-    // Create new persona object
-    const newPersona: CustomPersona = {
+    // Create the custom persona with user_id
+    const customPersona: CustomPersona = {
       id,
       name,
-      description,
-      instructions
+      description: role,
+      instructions,
+      user_id: userId // Explicitly set the user ID
     };
     
-    // Save persona
-    onSave(newPersona);
+    console.log("Created persona with user ID:", userId);
     
-    // Reset the form (but don't close the modal - that's handled by the parent)
-    resetForm();
-    
-    // Note: We're not calling onClose() here anymore - the parent component will handle it
-  };
-  
+    try {
+      // Call the onSave prop with the customPersona object
+      onSave(customPersona);
+      
+      // Close the modal
+      onClose();
+    } catch (error) {
+      console.error("Error creating custom persona:", error);
+      setError("Failed to create custom persona. Please try again.");
+    }
+  }
+
   const resetForm = () => {
     // Reset all form fields
     setName('');
@@ -620,7 +643,7 @@ When rewriting content, use a tone that embodies these characteristics and mimic
           
           <div>
             {currentStep === 'review' ? (
-              <Button onClick={handleSubmit} className="w-full sm:w-auto">
+              <Button onClick={handleReviewAndSave} className="w-full sm:w-auto">
                 Create Persona
               </Button>
             ) : (
