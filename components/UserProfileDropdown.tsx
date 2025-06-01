@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,27 +12,33 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { LogOut, User, Settings, HelpCircle } from "lucide-react"
+import { LogOut, Settings, HelpCircle, User } from "lucide-react"
 import { createClient } from "@/supabase/client"
+
+// Define user type to avoid any
+interface UserProfile {
+  id: string;
+  email?: string;
+  app_metadata: {
+    provider?: string;
+    [key: string]: unknown;
+  };
+  user_metadata: {
+    full_name?: string;
+    avatar_url?: string;
+    [key: string]: unknown;
+  };
+  aud: string;
+  [key: string]: unknown;
+}
 
 export default function UserProfileDropdown() {
   const router = useRouter()
-const [user, setUser] = useState<{
-    id: string;
-    email?: string;
-    app_metadata: {
-        provider?: string;
-        [key: string]: any;
-    };
-    user_metadata: {
-        full_name?: string;
-        avatar_url?: string;
-        [key: string]: any;
-    };
-    aud: string;
-    [key: string]: any;
-} | null>(null)
+  const [user, setUser] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // Use a temporary user ID for development until real authentication is in place
+  const tempUserId = "user-1"
 
   // Simple approach - just like middleware
   useEffect(() => {
@@ -47,7 +54,7 @@ const [user, setUser] = useState<{
           console.error("Error fetching user:", error.message)
           setUser(null)
         } else {
-          setUser(user)
+          setUser(user as any)
         }
       } catch (error) {
         console.error("Unexpected error:", error)
@@ -76,7 +83,7 @@ const [user, setUser] = useState<{
     if (!user) return "U"
     
     if (user.user_metadata?.full_name) {
-      const nameParts = user.user_metadata.full_name.split(" ")
+      const nameParts = String(user.user_metadata.full_name).split(" ")
       if (nameParts.length > 1) {
         return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase()
       } else if (nameParts[0]) {
@@ -85,7 +92,7 @@ const [user, setUser] = useState<{
     }
     
     if (user.email) {
-      return user.email[0].toUpperCase()
+      return String(user.email)[0].toUpperCase()
     }
     
     return "U"
@@ -108,6 +115,9 @@ const [user, setUser] = useState<{
     )
   }
 
+  // Get the profile ID to use (either real user ID or temp ID for development)
+  const profileId = user?.id || tempUserId;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -117,7 +127,7 @@ const [user, setUser] = useState<{
         >
           <Avatar className="h-8 w-8 border border-gray-200 dark:border-gray-800">
             <AvatarImage 
-              src={user.user_metadata?.avatar_url || ""} 
+              src={user.user_metadata?.avatar_url ? String(user.user_metadata.avatar_url) : ""} 
               alt="User avatar" 
             />
             <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-xs">
@@ -125,7 +135,7 @@ const [user, setUser] = useState<{
             </AvatarFallback>
           </Avatar>
           <span className="hidden md:inline-block text-sm font-medium">
-            {user.user_metadata?.full_name || user.email?.split('@')[0] || "User"}
+            {user.user_metadata?.full_name || (user.email ? String(user.email).split('@')[0] : "User")}
           </span>
           <svg className="hidden md:block h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
@@ -136,19 +146,18 @@ const [user, setUser] = useState<{
       <DropdownMenuContent align="end" className="w-56">
         <div className="px-2 py-2.5 border-b">
           <p className="font-medium truncate">
-            {user.user_metadata?.full_name || user.email?.split('@')[0] || "User"}
+            {user.user_metadata?.full_name || (user.email ? String(user.email).split('@')[0] : "User")}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
             {user.email}
           </p>
         </div>
         
-        <DropdownMenuItem 
-          onClick={() => router.push('/')} 
-          className="cursor-pointer gap-2"
-        >
-          <User className="w-4 h-4" />
-          <span>Profile</span>
+        <DropdownMenuItem asChild>
+          <Link href={`/profile/user-1`} className="cursor-pointer flex items-center gap-2">
+            <User className="w-4 h-4" />
+            <span>Edit Profile</span>
+          </Link>
         </DropdownMenuItem>
         
         <DropdownMenuItem 

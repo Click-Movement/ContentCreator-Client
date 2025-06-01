@@ -15,6 +15,13 @@ export default function NavBar() {
     return null
   }
   
+  const isActive = (path: string) => {
+    if (path === '/' && pathname === '/') {
+      return true
+    }
+    return path !== '/' && pathname?.startsWith(path)
+  }
+  
   return (
     <nav className="sticky top-0 z-50 w-full bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 shadow-sm backdrop-blur-sm bg-white/90 dark:bg-gray-950/90">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -33,7 +40,7 @@ export default function NavBar() {
             <Link 
               href="/"
               className={`px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                pathname === '/' 
+                isActive('/') 
                   ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' 
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
@@ -43,7 +50,7 @@ export default function NavBar() {
             <Link 
               href="/rewrite"
               className={`px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                pathname === '/rewrite' 
+                isActive('/rewrite') 
                   ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' 
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
@@ -51,9 +58,9 @@ export default function NavBar() {
               Rewrites
             </Link>
             <Link 
-              href="/"
+              href="/about"
               className={`px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                pathname === '/about' 
+                isActive('/about') 
                   ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' 
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
@@ -92,7 +99,7 @@ export default function NavBar() {
             <Link 
               href="/"
               className={`block px-3 py-2 text-base font-medium rounded-md ${
-                pathname === '/' 
+                isActive('/') 
                   ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' 
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
@@ -103,7 +110,7 @@ export default function NavBar() {
             <Link 
               href="/rewrite"
               className={`block px-3 py-2 text-base font-medium rounded-md ${
-                pathname === '/rewrite' 
+                isActive('/rewrite') 
                   ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' 
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
@@ -114,7 +121,7 @@ export default function NavBar() {
             <Link 
               href="/about"
               className={`block px-3 py-2 text-base font-medium rounded-md ${
-                pathname === '/about' 
+                isActive('/about') 
                   ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' 
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
