@@ -45,7 +45,7 @@ interface ProfileFormProps {
   };
 }
 
-export default function ProfileForm({ userId, initialData }: ProfileFormProps) {
+export default function ProfileForm({initialData }: ProfileFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);

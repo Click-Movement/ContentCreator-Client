@@ -1,503 +1,449 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
+import { ArrowRight, Sparkles, Zap, Star, Shield, MessageSquare } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { createClient } from '@/supabase/client';
-import { PlusCircle } from 'lucide-react';
-import CustomPersonaModal from '@/components/CustomPersonaModal';
-import Header from '@/components/header';
-import { loadCustomPersonas, saveCustomPersona, deleteCustomPersona, CustomPersona } from '@/lib/customPersonaRewriter';
-import { personas } from '@/types/personas';
 import { User } from '@supabase/auth-helpers-nextjs';
-import { Toaster } from "@/components/ui/toaster";
-import { toast } from "@/components/ui/use-toast";
 
-export default function Home() {
-  const router = useRouter();
+export default function LandingPage() {
   const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
-  const [, setIsLoadingUser] = useState(true);
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [selectedPersona, setSelectedPersona] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [selectedModel, setSelectedModel] = useState<'gpt' | 'claude'>('claude');
-  const [customPersonas, setCustomPersonas] = useState<CustomPersona[]>([]);
-  const [isCustomPersonaModalOpen, setIsCustomPersonaModalOpen] = useState(false);
-  const [isLoadingPersonas, setIsLoadingPersonas] = useState(true);
+  const [, setIsClient] = useState(false);
+  const [activeDemoTab, setActiveDemoTab] = useState(0);
 
-  // Get the current user when the component mounts
   useEffect(() => {
+    setIsClient(true);
+    
     async function getUserData() {
       try {
-        setIsLoadingUser(true);
-        const { data, error } = await supabase.auth.getUser();
-        if (error) {
-          console.error("Error fetching user:", error.message);
-          setUser(null);
-        } else {
-          console.log("User data in home page:", data.user);
-          setUser(data.user);
-          
-          // Show welcome toast when user is logged in
-          if (data.user) {
-            toast("Welcome back!", {
-              description: "Ready to transform your content with AI.",
-            });
-          }
-        }
+        const { data } = await supabase.auth.getUser();
+        setUser(data.user);
       } catch (err) {
-        console.error("Exception fetching user:", err);
-        setUser(null);
-      } finally {
-        setIsLoadingUser(false);
+        console.error("Error fetching user:", err);
       }
     }
-
+    
     getUserData();
-
-    // Listen for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user || null);
-      
-      if (event === 'SIGNED_IN' && session?.user) {
-        toast("Successfully signed in", {
-          description: "Welcome to Content Creator!",
-        });
-      } else if (event === 'SIGNED_OUT') {
-        toast("Signed out", {
-          description: "You have been successfully signed out.",
-        });
-      }
     });
-
+    
     return () => {
-      // Clean up the subscription
       authListener?.subscription?.unsubscribe();
     };
   }, [supabase.auth]);
-
-  // Load personas with the user's ID
-  useEffect(() => {
-    async function fetchPersonas() {
-      setIsLoadingPersonas(true);
-      try {
-        // Only load personas if we have a user
-        if (user?.id) {
-          console.log("Loading personas for user:", user.id);
-          const loadedCustomPersonas = await loadCustomPersonas(user.id);
-          setCustomPersonas(loadedCustomPersonas);
-          
-          if (loadedCustomPersonas.length > 0) {
-            toast(`Loaded ${loadedCustomPersonas.length} custom personas`, {
-              description: "Your custom writing styles are ready to use.",
-            });
-          }
-        } else {
-          console.log("No user ID available, not loading custom personas");
-          setCustomPersonas([]);
-        }
-      } catch (err) {
-        console.error('Failed to load personas:', err);
-        toast("Failed to load personas", {
-          description: "Please try refreshing the page.",
-          // variant: "destructive",j
-        });
-        setError('Failed to load personas. Please refresh the page.');
-      } finally {
-        setIsLoadingPersonas(false);
-      }
+  
+  // Demo tabs
+  const demoTabs = [
+    {
+      persona: "Professional Writer",
+      original: "I think your product is good and people will like it.",
+      rewritten: "Your innovative product stands out in a competitive market, offering unparalleled value that resonates deeply with your target audience."
+    },
+    {
+      persona: "Social Media Influencer",
+      original: "This new phone has nice features and looks good.",
+      rewritten: "OMG guys! 😍 This phone is EVERYTHING! The camera is insane and I'm literally obsessed with how sleek it looks. A total game-changer! #MustHave #Blessed"
+    },
+    {
+      persona: "Academic Scholar",
+      original: "Climate change is happening and has many effects.",
+      rewritten: "Empirical evidence demonstrates that anthropogenic climate change manifests through a multitude of interconnected phenomena, precipitating significant ecological, social, and economic ramifications across global ecosystems."
     }
+  ];
 
-    fetchPersonas();
-  }, [user]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!selectedPersona) {
-      toast("No persona selected", {
-        description: "Please select a writing style before continuing.",
-        // variant: "destructive",
-      });
-      setError('Please select a persona first.');
-      return;
+  // Testimonials
+  const testimonials = [
+    {
+      name: "Sarah Johnson",
+      role: "Content Marketing Manager",
+      image: "/testimonial-1.jpg",
+      quote: "This tool has revolutionized our content strategy. We've seen a 40% increase in engagement since incorporating AI-rewritten content!"
+    },
+    {
+      name: "Michael Chen",
+      role: "Freelance Copywriter",
+      image: "/testimonial-2.jpg",
+      quote: "As someone who writes in multiple voices for different clients, this tool has become indispensable. It's like having an entire writing team at my fingertips."
+    },
+    {
+      name: "Jessica Williams",
+      role: "Social Media Director",
+      image: "/testimonial-3.jpg",
+      quote: "The persona-based rewriting has helped us maintain consistent brand voice across all our channels while saving hours of editing time."
     }
-    
-    if (!content.trim()) {
-      toast("Content required", {
-        description: "Please enter some content to rewrite.",
-        // variant: "destructive",
-      });
-      setError('Please enter some content to rewrite.');
-      return;
+  ];
+  
+  // Features
+  const features = [
+    {
+      icon: <Sparkles className="h-8 w-8 text-purple-500" />,
+      title: "AI-Powered Transformation",
+      description: "Advanced AI models analyze your content and rewrite it while preserving your core message."
+    },
+    {
+      icon: <MessageSquare className="h-8 w-8 text-blue-500" />,
+      title: "Custom Personas",
+      description: "Create and save your own custom writing styles in addition to our pre-built professional personas."
+    },
+    {
+      icon: <Zap className="h-8 w-8 text-amber-500" />,
+      title: "Lightning Fast",
+      description: "Get your rewritten content in seconds, not minutes, no matter how complex the transformation."
+    },
+    {
+      icon: <Shield className="h-8 w-8 text-green-500" />,
+      title: "Data Privacy",
+      description: "Your content never gets stored or used for training. What you write stays private and secure."
     }
-
-    setIsLoading(true);
-    setError('');
-    
-    // Show loading toast
-    toast("Rewriting your content", {
-      description: "This may take a moment depending on the length...",
-    });
-
-    try {
-      const response = await fetch('/api/rewrite-direct', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title,
-          content,
-          personaId: selectedPersona,
-          model: selectedModel,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to rewrite content');
-      }
-
-      toast("Content rewritten successfully!", {
-        description: "Taking you to the preview page.",
-      });
-
-      localStorage.setItem(
-        'rewrittenContent',
-        JSON.stringify({
-          title: data.title,
-          content: data.content,
-          persona: selectedPersona,
-        })
-      );
-
-      // Navigate after a short delay to see the toast
-      setTimeout(() => {
-        router.push('/rewrite');
-      }, 1000);
-    } catch (err) {
-      console.error('Error during rewrite:', err);
-      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
-      
-      toast("Rewrite failed", {
-        description: errorMessage,
-        // variant: "destructive",
-      });
-      
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
+  ];
+  
+  // Animation variants
+  const fadeIn = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
   };
-
-  // Handle saving custom persona
-  const handleSaveCustomPersona = async (persona: CustomPersona) => {
-    try {
-      console.log("Saving persona:", persona);
-
-      if (!persona.user_id) {
-        throw new Error("Missing user ID in persona");
-      }
-      
-      toast("Saving persona...", {
-        description: `Creating "${persona.name}" persona`,
-      });
-
-      const saved = await saveCustomPersona(persona);
-
-      if (saved) {
-        setCustomPersonas(prev => [...prev.filter(p => p.id !== persona.id), persona]);
-        setSelectedPersona(persona.id);
-        setIsCustomPersonaModalOpen(false);
-        
-        toast("Persona saved", {
-          description: `"${persona.name}" is ready to use`,
-        });
-      } else {
-        throw new Error('Failed to save persona');
-      }
-    } catch (err) {
-      console.error('Error saving persona:', err);
-      toast("Failed to save persona", {
-        description: "Please try again later.",
-        // variant: "destructive",
-      });
-      setError('Failed to save custom persona. Please try again.');
+  
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.2 }
     }
-  };
-
-  // Handle deleting custom persona
-  const handleDeletePersona = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this persona?')) {
-      return;
-    }
-
-    if (!user?.id) {
-      toast("Authentication required", {
-        description: "You must be logged in to delete personas.",
-        // variant: "destructive",
-      });
-      setError('You must be logged in to delete personas');
-      return;
-    }
-
-    // Find persona name for the toast
-    const personaToDelete = customPersonas.find(p => p.id === id);
-    const personaName = personaToDelete?.name || "Custom persona";
-    
-    toast("Deleting persona...", {
-      description: `Removing "${personaName}"`,
-    });
-
-    try {
-      console.log("Deleting persona using user ID:", user.id);
-      const deleted = await deleteCustomPersona(id, user.id);
-
-      if (deleted) {
-        setCustomPersonas(prev => prev.filter(p => p.id !== id));
-
-        if (selectedPersona === id) {
-          setSelectedPersona(personas[0]?.id || '');
-        }
-        
-        toast("Persona deleted", {
-          description: `"${personaName}" has been removed`,
-        });
-      } else {
-        throw new Error('Failed to delete persona');
-      }
-    } catch (err) {
-      console.error('Error deleting persona:', err);
-      toast("Delete failed", {
-        description: "There was a problem deleting your persona.",
-        // variant: "destructive",
-      });
-      setError('Failed to delete custom persona. Please try again.');
-    }
-  };
-
-  // Handle create custom persona button
-  const handleCreateCustomPersonaClick = () => {
-    if (!user) {
-      toast("Authentication required", {
-        description: "Please sign in to create custom personas.",
-      });
-      router.push('/auth/signin?redirect=/');
-      return;
-    }
-    setIsCustomPersonaModalOpen(true);
-  };
-
-  // Handle model change
-  const handleModelChange = (model: 'gpt' | 'claude') => {
-    setSelectedModel(model);
-    toast("AI model changed", {
-      description: `Now using ${model === 'gpt' ? 'OpenAI GPT' : 'Anthropic Claude'} for rewriting.`,
-    });
   };
 
   return (
-    <main className="flex min-h-screen flex-col p-4 md:p-8">
-      <Toaster />
-      
-      <div className="w-full max-w-4xl mx-auto">
-        <Header />
-
-        <div className="mb-8 px-4"></div>
-
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="bg-blue-50 px-6 py-4 border-b border-blue-100">
-            <h2 className="text-xl font-semibold text-blue-800">Rewrite Content</h2>
-            <p className="text-sm text-blue-600 mt-1">Transform your content with distinctive voices</p>
-          </div>
-
-          <div className="p-6 md:p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label htmlFor="persona" className="block text-sm font-medium text-gray-700">
-                    Select Persona Style
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleCreateCustomPersonaClick}
-                    className="text-sm flex items-center text-blue-600 hover:text-blue-800"
-                  >
-                    <PlusCircle className="h-4 w-4 mr-1" />
-                    Create Custom Persona
-                  </button>
-                </div>
-
-                <div className="relative">
-                  {isLoadingPersonas ? (
-                    <div className="w-full h-10 bg-gray-100 animate-pulse rounded-lg"></div>
-                  ) : (
-                    <select
-                      id="persona"
-                      value={selectedPersona}
-                      onChange={(e) => {
-                        setSelectedPersona(e.target.value);
-                        
-                        if (e.target.value) {
-                          const selectedOption = e.target.options[e.target.selectedIndex];
-                          const personaName = selectedOption.text.split('-')[0].trim();
-                          toast("Persona selected", {
-                            description: `Content will be written in the style of "${personaName}"`,
-                          });
-                        }
-                      }}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white transition-colors duration-200"
-                      required
-                    >
-                      <option value="" disabled>
-                        Select a persona style
-                      </option>
-
-                      <optgroup label="Default Personas">
-                        {personas.map((persona) => (
-                          <option key={persona.id} value={persona.id}>
-                            {persona.name} - {persona.description}
-                          </option>
-                        ))}
-                      </optgroup>
-
-                      {customPersonas.length > 0 && (
-                        <optgroup label="Your Custom Personas">
-                          {customPersonas.map((persona) => (
-                            <option key={persona.id} value={persona.id}>
-                              {persona.name} - {persona.description || ''}
-                            </option>
-                          ))}
-                        </optgroup>
-                      )}
-                    </select>
-                  )}
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
-                    <svg
-                      className="fill-current h-5 w-5"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                    </svg>
-                  </div>
-                </div>
-
-                {selectedPersona && selectedPersona.startsWith('custom_') && (
-                  <div className="mt-2 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => handleDeletePersona(selectedPersona)}
-                      className="text-red-600 hover:text-red-800 text-sm flex items-center"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4 mr-1"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                      Delete this persona
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                  Title
-                </label>
-                <input
-                  id="title"
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
-                  placeholder="Enter the title of your content"
-                  required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
-                  Content
-                </label>
-                <textarea
-                  id="content"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 min-h-[200px]"
-                  placeholder="Enter your content to rewrite"
-                  required
-                ></textarea>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">AI Model</label>
-                <div className="flex space-x-4">
-                  <label className="inline-flex items-center">
-                    <input
-                      type="radio"
-                      className="form-radio text-blue-600"
-                      name="model"
-                      checked={selectedModel === 'claude'}
-                      onChange={() => handleModelChange('claude')}
-                    />
-                    <span className="ml-2">Claude (Anthropic)</span>
-                  </label>
-                  <label className="inline-flex items-center">
-                    <input
-                      type="radio"
-                      className="form-radio text-blue-600"
-                      name="model"
-                      checked={selectedModel === 'gpt'}
-                      onChange={() => handleModelChange('gpt')}
-                    />
-                    <span className="ml-2">GPT (OpenAI)</span>
-                  </label>
-                </div>
-              </div>
-
-              {error && (
-                <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4">
-                  <p>{error}</p>
-                </div>
-              )}
-
-              <div className="pt-4">
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-all duration-300 ${
-                    isLoading
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl'
-                  }`}
+    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white overflow-hidden">
+      {/* Hero Section */}
+      <section className="relative pt-20 pb-32 overflow-hidden">
+        {/* Background Elements */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+          <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-pink-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+        </div>
+        
+        <div className="container mx-auto px-4 relative z-10">
+          <motion.div 
+            className="text-center max-w-5xl mx-auto"
+            initial="hidden"
+            animate="visible"
+            variants={fadeIn}
+          >
+            <motion.div 
+              className="inline-block mb-6"
+              animate={{ 
+                rotate: [0, 5, 0, -5, 0],
+                scale: [1, 1.05, 1, 1.05, 1]
+              }}
+              transition={{ duration: 5, repeat: Infinity }}
+            >
+              <span className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm font-medium">
+                <Sparkles className="h-4 w-4 inline mr-2" />
+                Content that captivates, powered by AI
+              </span>
+            </motion.div>
+            
+            <h1 className="text-4xl md:text-6xl font-extrabold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-700">
+              Transform Your Content with AI Magic
+            </h1>
+            
+            <p className="text-xl text-slate-600 mb-10 max-w-3xl mx-auto">
+              Instantly rewrite your content in countless styles and voices, from professional to creative, academic to casual, all with a single click.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button 
+                  asChild 
+                  size="lg" 
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                 >
-                  {isLoading ? 'Rewriting...' : 'Rewrite Content'}
-                </button>
+                  <Link href="/content">
+                    Start Rewriting Now <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+              </motion.div>
+              
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                {!user ? (
+                  <Button 
+                    asChild 
+                    variant="outline" 
+                    size="lg" 
+                    className="border-2 border-slate-300 hover:border-slate-400 text-lg px-8 py-6 rounded-xl"
+                  >
+                    <Link href="/auth/signup">
+                      Create Free Account
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button 
+                    asChild 
+                    variant="outline" 
+                    size="lg" 
+                    className="border-2 border-slate-300 hover:border-slate-400 text-lg px-8 py-6 rounded-xl"
+                  >
+                    <Link href="/profile">
+                      Go to Dashboard
+                    </Link>
+                  </Button>
+                )}
+              </motion.div>
+            </div>
+            
+            {/* Demo preview */}
+            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+              <div className="bg-slate-800 p-2 flex space-x-2">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
               </div>
-            </form>
+              <div className="p-4">
+                <div className="flex mb-4 border-b border-slate-200">
+                  {demoTabs.map((tab, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setActiveDemoTab(index)}
+                      className={`px-4 py-2 text-sm font-medium ${
+                        activeDemoTab === index
+                          ? "text-blue-600 border-b-2 border-blue-600"
+                          : "text-slate-600 hover:text-slate-800"
+                      }`}
+                    >
+                      {tab.persona}
+                    </button>
+                  ))}
+                </div>
+                
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeDemoTab}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.25 }}
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
+                      <div className="bg-slate-50 p-5 rounded-lg">
+                        <div className="text-sm font-medium text-slate-500 mb-2">Original Content:</div>
+                        <div className="text-slate-800">
+                          {demoTabs[activeDemoTab].original}
+                        </div>
+                      </div>
+                      <div className="bg-blue-50 p-5 rounded-lg border-l-4 border-blue-500">
+                        <div className="text-sm font-medium text-blue-600 mb-2">After AI Rewrite:</div>
+                        <div className="text-slate-800">
+                          {demoTabs[activeDemoTab].rewritten}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+      
+      {/* Features Section */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4">
+          <motion.div 
+            className="text-center mb-16"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={fadeIn}
+          >
+            <div className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-600 text-sm font-medium mb-4">
+              Powerful Features
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+              Everything You Need for Perfect Content
+            </h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+              Our advanced AI understands context, tone, and style to transform your writing while preserving your message.
+            </p>
+          </motion.div>
+          
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+          >
+            {features.map((feature, index) => (
+              <motion.div 
+                key={index} 
+                className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg hover:shadow-xl transition-shadow duration-300"
+                variants={fadeIn}
+                whileHover={{ y: -5 }}
+              >
+                <div className="p-3 bg-slate-50 rounded-lg inline-block mb-4">
+                  {feature.icon}
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-2">{feature.title}</h3>
+                <p className="text-slate-600">{feature.description}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+      
+      {/* Testimonials */}
+      <section className="py-20 bg-slate-50">
+        <div className="container mx-auto px-4">
+          <motion.div 
+            className="text-center mb-16"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeIn}
+          >
+            <div className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-sm font-medium mb-4">
+              Testimonials
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+              Trusted by Content Creators
+            </h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+              See what our users are saying about how our tool has transformed their content creation process.
+            </p>
+          </motion.div>
+          
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+          >
+            {testimonials.map((testimonial, index) => (
+              <motion.div 
+                key={index} 
+                className="bg-white rounded-xl p-6 border border-slate-200 shadow-md hover:shadow-lg transition-shadow duration-300"
+                variants={fadeIn}
+              >
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 rounded-full bg-slate-200 mr-4 overflow-hidden">
+                    {/* Replace with actual images when available */}
+                    <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500"></div>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-900">{testimonial.name}</h4>
+                    <p className="text-sm text-slate-600">{testimonial.role}</p>
+                  </div>
+                </div>
+                <p className="text-slate-700 italic">{testimonial.quote}</p>
+                <div className="flex mt-4 text-amber-500">
+                  <Star className="h-5 w-5 fill-current" />
+                  <Star className="h-5 w-5 fill-current" />
+                  <Star className="h-5 w-5 fill-current" />
+                  <Star className="h-5 w-5 fill-current" />
+                  <Star className="h-5 w-5 fill-current" />
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+      
+      {/* CTA Section */}
+      <section className="py-20 bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+        <div className="container mx-auto px-4">
+          <motion.div 
+            className="text-center max-w-4xl mx-auto"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeIn}
+          >
+            <h2 className="text-3xl md:text-5xl font-bold mb-6">
+              Ready to Transform Your Content?
+            </h2>
+            <p className="text-xl text-blue-100 mb-8">
+              Join thousands of content creators who are saving time and improving their writing with our AI-powered rewriting tool.
+            </p>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button 
+                asChild 
+                size="lg" 
+                className="bg-white text-blue-700 hover:bg-blue-50 text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <Link href="/content">
+                  Start Rewriting Now <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+      
+      {/* Footer */}
+      <footer className="py-10 bg-slate-900 text-slate-400">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+              <h3 className="text-white font-bold mb-4">Content Rewriter</h3>
+              <p className="mb-4">Transform your content with AI-powered rewriting in different personas and styles.</p>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-4">Features</h4>
+              <ul className="space-y-2">
+                <li><Link href="/features" className="hover:text-white transition-colors">AI Models</Link></li>
+                <li><Link href="/features" className="hover:text-white transition-colors">Custom Personas</Link></li>
+                <li><Link href="/features" className="hover:text-white transition-colors">Content Export</Link></li>
+                <li><Link href="/features" className="hover:text-white transition-colors">WordPress Integration</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-4">Resources</h4>
+              <ul className="space-y-2">
+                <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
+                <li><Link href="/blog" className="hover:text-white transition-colors">Blog</Link></li>
+                <li><Link href="/help" className="hover:text-white transition-colors">Help Center</Link></li>
+                <li><Link href="/api" className="hover:text-white transition-colors">API Documentation</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-4">Legal</h4>
+              <ul className="space-y-2">
+                <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
+                <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/cookies" className="hover:text-white transition-colors">Cookie Policy</Link></li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-slate-800 mt-10 pt-6 text-center">
+            <p>&copy; {new Date().getFullYear()} Content Rewriter. All rights reserved.</p>
           </div>
         </div>
+      </footer>
 
-        <CustomPersonaModal
-          isOpen={isCustomPersonaModalOpen}
-          onClose={() => setIsCustomPersonaModalOpen(false)}
-          onSave={handleSaveCustomPersona}
-        />
-      </div>
+      {/* Add the custom animation classes */}
+      <style jsx global>{`
+        @keyframes blob {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          25% { transform: translate(20px, -30px) scale(1.1); }
+          50% { transform: translate(-20px, 20px) scale(0.9); }
+          75% { transform: translate(30px, 30px) scale(1.05); }
+        }
+        .animate-blob {
+          animation: blob 15s linear infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
     </main>
   );
 }

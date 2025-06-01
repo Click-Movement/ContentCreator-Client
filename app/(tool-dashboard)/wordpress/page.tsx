@@ -176,7 +176,7 @@ export default function WordPressPage() {
   
   // Find the persona name if available
   const personaName = rewrittenContent?.persona 
-  /* eslint-disable-next-line @typescript-eslint/no-explici--------------------------t-any */
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
     ? (personas.find((p:any) => p.id === rewrittenContent.persona)?.name || 'Selected Commentator')
     : 'Selected Commentator';
 

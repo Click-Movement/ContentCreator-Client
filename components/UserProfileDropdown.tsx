@@ -38,7 +38,7 @@ export default function UserProfileDropdown() {
   const [loading, setLoading] = useState(true)
 
   // Use a temporary user ID for development until real authentication is in place
-  const tempUserId = "user-1"
+  // const tempUserId = "user-1"
 
   // Simple approach - just like middleware
   useEffect(() => {
@@ -116,7 +116,7 @@ export default function UserProfileDropdown() {
   }
 
   // Get the profile ID to use (either real user ID or temp ID for development)
-  const profileId = user?.id || tempUserId;
+  // const profileId = user?.id || tempUserId;
 
   return (
     <DropdownMenu>

@@ -39,9 +39,8 @@ export async function signup(data: {
     password: data.password,
     options: {
       data: {
-        full_name: data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : undefined,
-        first_name: data.firstName,
-        last_name: data.lastName,
+        firstName: data.firstName,
+        lastName: data.lastName,
       },
       emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/signin`,
     }

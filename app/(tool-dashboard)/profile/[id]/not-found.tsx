@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { UserX, Home, ArrowLeft } from 'lucide-react';
+import { UserX, ArrowLeft } from 'lucide-react';
 
 export default function NotFound() {
   return (
@@ -15,7 +15,7 @@ export default function NotFound() {
           </div>
           <CardTitle className="text-xl">Profile Not Found</CardTitle>
           <CardDescription>
-            We couldn't find the profile you're looking for.
+            We could not find the profile you are looking for.
           </CardDescription>
         </CardHeader>
         <CardContent className="text-center text-sm text-slate-600">
