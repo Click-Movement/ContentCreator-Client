@@ -60,3 +60,28 @@ export const dashboardTheme = {
     inner: "inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)",
   }
 };
+
+export const cardStyles = {
+    baseStyles: "overflow-hidden border-gray-200 hover:border-gray-300 transition-all duration-300 hover:shadow-md",
+    gradientHeader: "bg-gradient-to-r from-blue-50 to-violet-50 border-b border-gray-200",
+    neutralHeader: "bg-gradient-to-r from-gray-50 to-slate-50 border-b border-gray-200",
+  };
+  
+  export const buttonStyles = {
+    primary: "bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 text-white transition-all shadow-sm hover:shadow-md",
+    outlineHover: "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-all",
+    iconButton: "rounded-full hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-all"
+  };
+  
+  export const badgeStyles = {
+    success: "bg-green-100 hover:bg-green-200 text-green-800 border-green-200 hover:border-green-300",
+    warning: "bg-amber-100 hover:bg-amber-200 text-amber-800 border-amber-200 hover:border-amber-300",
+    danger: "bg-red-100 hover:bg-red-200 text-red-800 border-red-200 hover:border-red-300",
+    premium: "bg-violet-100 hover:bg-violet-200 text-violet-800 border-violet-200 hover:border-violet-300",
+  };
+  
+  export const tableStyles = {
+    headerRow: "bg-gray-50 hover:bg-gray-50",
+    row: "hover:bg-blue-50/30 transition-colors border-b hover:shadow-sm",
+    cell: "py-3",
+  };
