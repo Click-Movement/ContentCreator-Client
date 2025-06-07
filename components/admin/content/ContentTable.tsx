@@ -38,7 +38,7 @@ type ContentItem = {
   creditsUsed: number;
   createdAt: string;
 };
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type ContentTableProps = {
   content: ContentItem[];
   tableRowVariants: any;

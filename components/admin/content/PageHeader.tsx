@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { buttonStyles } from '@/lib/dashboard-theme';
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type PageHeaderProps = {
   title: string;
   onCreateContent?: () => void;

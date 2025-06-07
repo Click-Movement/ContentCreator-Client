@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type SubscriptionTabsProps = {
   activeTab: string;
   onTabChange: (value: string) => void;

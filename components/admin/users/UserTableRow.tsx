@@ -1,11 +1,11 @@
 import React from 'react';
-import { TableCell, TableRow } from '@/components/ui/table';
+import { TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { tableStyles, badgeStyles, buttonStyles } from '@/lib/dashboard-theme';
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type User = {
   id: string;
   name: string;

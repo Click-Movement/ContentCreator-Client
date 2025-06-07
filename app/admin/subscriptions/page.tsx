@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import PageHeader from '@/components/admin/subscriptions/PageHeader';
 import StatCards from '@/components/admin/subscriptions/StatCards';
 import SubscriptionTabs from '@/components/admin/subscriptions/SubscriptionTabs';
@@ -89,58 +89,60 @@ export default function AdminSubscriptionsPage() {
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.3 }}
         >
-          <TabsContent value="active" className="mt-6">
-            <SubscriptionCard
-              title="Active Subscriptions"
-              description="Manage currently active subscription plans"
-              subscriptions={filteredSubscriptions.active}
-              itemVariants={itemVariants}
-              tableRowVariants={tableRowVariants}
-              onManage={handleManageSubscription}
-              itemCount={filteredSubscriptions.active.length}
-              totalCount={filteredSubscriptions.active.length}
-            />
-          </TabsContent>
-          
-          <TabsContent value="pending" className="mt-6">
-            <SubscriptionCard
-              title="Pending Subscriptions"
-              description="Subscriptions that are pending activation or cancellation"
-              subscriptions={filteredSubscriptions.pending}
-              itemVariants={itemVariants}
-              tableRowVariants={tableRowVariants}
-              onManage={handleManageSubscription}
-              itemCount={filteredSubscriptions.pending.length}
-              totalCount={filteredSubscriptions.pending.length}
-            />
-          </TabsContent>
-          
-          <TabsContent value="expired" className="mt-6">
-            <SubscriptionCard
-              title="Expired Subscriptions"
-              description="Subscriptions that have expired or been cancelled"
-              subscriptions={filteredSubscriptions.expired}
-              itemVariants={itemVariants}
-              tableRowVariants={tableRowVariants}
-              onManage={handleManageSubscription}
-              emptyMessage="No expired subscriptions found"
-              itemCount={filteredSubscriptions.expired.length}
-              totalCount={filteredSubscriptions.expired.length}
-            />
-          </TabsContent>
-          
-          <TabsContent value="all" className="mt-6">
-            <SubscriptionCard
-              title="All Subscriptions"
-              description="Complete list of all subscription records"
-              subscriptions={filteredSubscriptions.all}
-              itemVariants={itemVariants}
-              tableRowVariants={tableRowVariants}
-              onManage={handleManageSubscription}
-              itemCount={filteredSubscriptions.all.length}
-              totalCount={filteredSubscriptions.all.length}
-            />
-          </TabsContent>
+          <Tabs value={activeTab} defaultValue="active">
+            <TabsContent value="active" className="mt-6">
+              <SubscriptionCard
+                title="Active Subscriptions"
+                description="Manage currently active subscription plans"
+                subscriptions={filteredSubscriptions.active}
+                itemVariants={itemVariants}
+                tableRowVariants={tableRowVariants}
+                onManage={handleManageSubscription}
+                itemCount={filteredSubscriptions.active.length}
+                totalCount={filteredSubscriptions.active.length}
+              />
+            </TabsContent>
+            
+            <TabsContent value="pending" className="mt-6">
+              <SubscriptionCard
+                title="Pending Subscriptions"
+                description="Subscriptions that are pending activation or cancellation"
+                subscriptions={filteredSubscriptions.pending}
+                itemVariants={itemVariants}
+                tableRowVariants={tableRowVariants}
+                onManage={handleManageSubscription}
+                itemCount={filteredSubscriptions.pending.length}
+                totalCount={filteredSubscriptions.pending.length}
+              />
+            </TabsContent>
+            
+            <TabsContent value="expired" className="mt-6">
+              <SubscriptionCard
+                title="Expired Subscriptions"
+                description="Subscriptions that have expired or been cancelled"
+                subscriptions={filteredSubscriptions.expired}
+                itemVariants={itemVariants}
+                tableRowVariants={tableRowVariants}
+                onManage={handleManageSubscription}
+                emptyMessage="No expired subscriptions found"
+                itemCount={filteredSubscriptions.expired.length}
+                totalCount={filteredSubscriptions.expired.length}
+              />
+            </TabsContent>
+            
+            <TabsContent value="all" className="mt-6">
+              <SubscriptionCard
+                title="All Subscriptions"
+                description="Complete list of all subscription records"
+                subscriptions={filteredSubscriptions.all}
+                itemVariants={itemVariants}
+                tableRowVariants={tableRowVariants}
+                onManage={handleManageSubscription}
+                itemCount={filteredSubscriptions.all.length}
+                totalCount={filteredSubscriptions.all.length}
+              />
+            </TabsContent>
+          </Tabs>
         </motion.div>
       </AnimatePresence>
     </motion.div>

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { buttonStyles } from '@/lib/dashboard-theme';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type ContentPaginationProps = {
   currentPage: number;
   totalPages: number;

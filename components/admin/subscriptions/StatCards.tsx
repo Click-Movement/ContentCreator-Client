@@ -6,7 +6,7 @@ import {
   CreditCard,
 } from 'lucide-react';
 import StatCard from './StatCard';
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type StatCardsProps = {
   summary: {
     totalRevenue: number;

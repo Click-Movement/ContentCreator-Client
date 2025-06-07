@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Save, Check } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type SettingCardProps = {
   title: string;
   description: string;

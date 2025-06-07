@@ -8,8 +8,8 @@ import {
 } from '@/components/ui/card';
 import { ArrowUpRight } from 'lucide-react';
 import { cardStyles } from '@/lib/dashboard-theme';
-import { LucideIcon } from 'lucide-react';
-
+// import { LucideIcon } from 'lucide-react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type StatCardProps = {
   title: string;
   value: string | number;

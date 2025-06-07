@@ -2,7 +2,6 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { 
   TableCell,
-  TableRow
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,6 +20,7 @@ type Subscription = {
   renewalDate: string;
   avatar: string | null;
 };
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 type SubscriptionRowProps = {
   subscription: Subscription;

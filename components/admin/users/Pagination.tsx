@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { buttonStyles } from '@/lib/dashboard-theme';
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type PaginationProps = {
   currentPage: number;
   totalPages: number;

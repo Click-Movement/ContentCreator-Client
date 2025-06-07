@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, CreditCard, CheckCircle2, Lock, Shield, Zap, Star, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import Link from "next/link";
 // import { createClient } from "@/supabase/client";
 
 // Define TypeScript interfaces
@@ -59,7 +59,8 @@ const staggerContainer = {
   }
 };
 
-export default function UpgradePlanPage() {
+// Content component that uses useSearchParams
+function UpgradeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -700,3 +701,22 @@ export default function UpgradePlanPage() {
     </main>
   );
 }
+
+// Main component with Suspense boundary
+export default function UpgradePlanPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+          <p className="mt-4 text-slate-600">Loading plan details...</p>
+        </div>
+      </div>
+    }>
+      <UpgradeContent />
+    </Suspense>
+  );
+}
+
+// Import useSearchParams only here at the end, outside components
+import { useSearchParams } from "next/navigation";

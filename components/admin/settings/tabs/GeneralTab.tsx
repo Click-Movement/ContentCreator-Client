@@ -5,7 +5,7 @@ import InputWithIcon from '../InputWithIcon';
 import SelectWithIcon from '../SelectWithIcon';
 import ToggleItem from '../toggle-item';
 import { Globe, FileText, Settings, Mail, Clock, Languages, Coins } from 'lucide-react';
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type GeneralTabProps = {
   containerVariants: any;
   itemVariants: any;

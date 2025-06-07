@@ -63,10 +63,6 @@ export default function RewritePage() {
   // Toggle HTML mode with toast notification
   const toggleHtmlMode = () => {
     setHtmlMode(!htmlMode);
-    
-    toast(htmlMode ? "Switched to rendered view" : "Switched to HTML source view", {
-      description: htmlMode ? "Viewing content as it will appear" : "Viewing the HTML markup",
-    });
   };
 
   // Handle navigation to publish page
@@ -93,9 +89,7 @@ export default function RewritePage() {
 
   // Handle back button with toast
   const handleBackToEditor = () => {
-    toast("Returning to editor", {
-      description: "Taking you back to the content editor",
-    });
+
     
     setTimeout(() => {
       router.push('/');

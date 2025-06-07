@@ -22,7 +22,7 @@ type User = {
   createdAt: string;
   avatar: string | null;
 };
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type UserManagementCardProps = {
   users: User[];
   searchValue: string;

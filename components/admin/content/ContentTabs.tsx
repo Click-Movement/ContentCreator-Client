@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Filter } from 'lucide-react';
 import { buttonStyles } from '@/lib/dashboard-theme';
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type ContentTabsProps = {
   activeTab: string;
   onTabChange: (value: string) => void;
@@ -16,7 +16,7 @@ type ContentTabsProps = {
 };
 
 export default function ContentTabs({ 
-  activeTab, 
+//   activeTab, 
   onTabChange, 
   onSearch, 
   searchQuery, 

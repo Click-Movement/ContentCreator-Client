@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect } from 'react'
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { AlertTriangle, ShieldOff, Lock } from 'lucide-react'
 
-export function AuthToast() {
+// Create a content component that uses useSearchParams
+function AuthToastContent() {
   const searchParams = useSearchParams()
   const error = searchParams.get('error')
   const message = searchParams.get('message')
@@ -13,7 +15,7 @@ export function AuthToast() {
   useEffect(() => {
     if (error === 'admin_access_denied') {
       toast.custom(
-        (id) => (
+        () => (
           <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded shadow-lg">
             <div className="flex">
               <div className="flex-shrink-0">
@@ -37,7 +39,7 @@ export function AuthToast() {
       )
     } else if (error === 'admin_auth_required') {
       toast.custom(
-        (id) => (
+        () => (
           <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded shadow-lg">
             <div className="flex">
               <div className="flex-shrink-0">
@@ -61,7 +63,7 @@ export function AuthToast() {
       )
     } else if (error === 'admin_check_failed') {
       toast.custom(
-        (id) => (
+        () => (
           <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded shadow-lg">
             <div className="flex">
               <div className="flex-shrink-0">
@@ -87,4 +89,13 @@ export function AuthToast() {
   }, [error, message])
   
   return null // This component doesn't render anything directly
+}
+
+// Main component with Suspense boundary
+export function AuthToast() {
+  return (
+    <Suspense fallback={null}>
+      <AuthToastContent />
+    </Suspense>
+  )
 }

@@ -22,7 +22,7 @@ type Subscription = {
   renewalDate: string;
   avatar: string | null;
 };
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type SubscriptionCardProps = {
   title: string;
   description: string;

@@ -19,7 +19,7 @@ type ContentItem = {
   creditsUsed: number;
   createdAt: string;
 };
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type ContentTabPanelProps = {
   title: string;
   description: string;

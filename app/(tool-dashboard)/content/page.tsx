@@ -41,11 +41,7 @@ export default function Home() {
           setUser(data.user);
           
           // Show welcome toast when user is logged in
-          if (data.user) {
-            toast("Welcome back!", {
-              description: "Ready to transform your content with AI.",
-            });
-          }
+         
         }
       } catch (err) {
         console.error("Exception fetching user:", err);
@@ -89,11 +85,7 @@ export default function Home() {
           const loadedCustomPersonas = await loadCustomPersonas(user.id);
           setCustomPersonas(loadedCustomPersonas);
           
-          if (loadedCustomPersonas.length > 0) {
-            toast(`Loaded ${loadedCustomPersonas.length} custom personas`, {
-              description: "Your custom writing styles are ready to use.",
-            });
-          }
+        
         } else {
           console.log("No user ID available, not loading custom personas");
           setCustomPersonas([]);
@@ -117,10 +109,7 @@ export default function Home() {
     e.preventDefault();
 
     if (!selectedPersona) {
-      toast("No persona selected", {
-        description: "Please select a writing style before continuing.",
-        // variant: "destructive",
-      });
+      
       setError('Please select a persona first.');
       return;
     }
@@ -138,10 +127,7 @@ export default function Home() {
     setError('');
     
     // Show loading toast
-    toast("Rewriting your content", {
-      description: "This may take a moment depending on the length...",
-    });
-
+    
     try {
       const response = await fetch('/api/rewrite-direct', {
         method: 'POST',
@@ -203,9 +189,7 @@ export default function Home() {
         throw new Error("Missing user ID in persona");
       }
       
-      toast("Saving persona...", {
-        description: `Creating "${persona.name}" persona`,
-      });
+    
 
       const saved = await saveCustomPersona(persona);
 
@@ -214,9 +198,7 @@ export default function Home() {
         setSelectedPersona(persona.id);
         setIsCustomPersonaModalOpen(false);
         
-        toast("Persona saved", {
-          description: `"${persona.name}" is ready to use`,
-        });
+       
       } else {
         throw new Error('Failed to save persona');
       }
@@ -249,10 +231,7 @@ export default function Home() {
     const personaToDelete = customPersonas.find(p => p.id === id);
     const personaName = personaToDelete?.name || "Custom persona";
     
-    toast("Deleting persona...", {
-      description: `Removing "${personaName}"`,
-    });
-
+   
     try {
       console.log("Deleting persona using user ID:", user.id);
       const deleted = await deleteCustomPersona(id, user.id);
@@ -272,10 +251,6 @@ export default function Home() {
       }
     } catch (err) {
       console.error('Error deleting persona:', err);
-      toast("Delete failed", {
-        description: "There was a problem deleting your persona.",
-        // variant: "destructive",
-      });
       setError('Failed to delete custom persona. Please try again.');
     }
   };
@@ -283,9 +258,6 @@ export default function Home() {
   // Handle create custom persona button
   const handleCreateCustomPersonaClick = () => {
     if (!user) {
-      toast("Authentication required", {
-        description: "Please sign in to create custom personas.",
-      });
       router.push('/auth/signin?redirect=/');
       return;
     }
@@ -295,9 +267,6 @@ export default function Home() {
   // Handle model change
   const handleModelChange = (model: 'gpt' | 'claude') => {
     setSelectedModel(model);
-    toast("AI model changed", {
-      description: `Now using ${model === 'gpt' ? 'OpenAI GPT' : 'Anthropic Claude'} for rewriting.`,
-    });
   };
 
   return (

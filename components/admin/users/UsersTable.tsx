@@ -2,12 +2,11 @@ import React from 'react';
 import { 
   Table, 
   TableBody, 
-  TableCell, 
   TableHead, 
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { motion } from 'framer-motion';
+
 import { tableStyles } from '@/lib/dashboard-theme';
 import UserTableRow from './UserTableRow';
 
@@ -21,6 +20,7 @@ type User = {
   createdAt: string;
   avatar: string | null;
 };
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 type UsersTableProps = {
   users: User[];

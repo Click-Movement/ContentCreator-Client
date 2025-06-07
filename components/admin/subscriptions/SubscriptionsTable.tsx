@@ -2,7 +2,6 @@ import React from 'react';
 import { 
   Table, 
   TableBody, 
-  TableCell, 
   TableHead, 
   TableHeader, 
   TableRow 
@@ -22,6 +21,8 @@ type Subscription = {
   renewalDate: string;
   avatar: string | null;
 };
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 type SubscriptionsTableProps = {
   subscriptions: Subscription[];
