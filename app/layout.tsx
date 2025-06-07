@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import NavBar from "@/components/NavBar";
 import { Toaster } from "sonner";
+import { AuthToast } from "@/components/auth/auth-toast";
 import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
 
@@ -33,7 +34,8 @@ export default function RootLayout({
         <QueryProvider>
         <NavBar />
         {children}
-        <Toaster richColors closeButton position="top-center" expand={true} />
+        <Toaster position="top-right" />
+        <AuthToast />
         </QueryProvider>
       </body>
     </html>

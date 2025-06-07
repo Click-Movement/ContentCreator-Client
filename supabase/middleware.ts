@@ -32,39 +32,67 @@ export async function updateSession(request: NextRequest) {
   // issues with users being randomly logged out.
 
   // IMPORTANT: DO NOT REMOVE auth.getUser()
-
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  console.log(user)
+  
+  const pathname = request.nextUrl.pathname
+  
+  // Check if the route is an admin route
+  const isAdminRoute = pathname.startsWith('/admin')
+  
+  // If trying to access admin routes, check if user exists and has admin role
+  if (isAdminRoute) {
+    if (!user) {
+      // User not signed in, redirect to sign in page
+      const url = request.nextUrl.clone()
+      url.pathname = '/auth/signin'
+      url.searchParams.set('redirectTo', pathname)
+      url.searchParams.set('error', 'admin_auth_required')
+      return NextResponse.redirect(url)
+    }
+    
+    // User exists, now check if they have admin role
+    try {
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+      
+      if (error || !userData || userData.role !== 'admin') {
+        // User doesn't have admin role, redirect to home page
+        const url = request.nextUrl.clone()
+        url.pathname = '/'
+        url.searchParams.set('error', 'admin_access_denied')
+        url.searchParams.set('message', 'Only administrators can access this page')
+        return NextResponse.redirect(url)
+      }
+    } catch (err) {
+      console.error('Error checking user role:', err)
+      // If there's an error checking the role, redirect to home as a precaution
+      const url = request.nextUrl.clone()
+      url.pathname = '/'
+      url.searchParams.set('error', 'admin_check_failed')
+      return NextResponse.redirect(url)
+    }
+  }
+  
+  // Standard authentication check for non-admin routes
   if (
     !user &&
-    !request.nextUrl.pathname.startsWith('/auth/signin') &&
-    !request.nextUrl.pathname.startsWith('/auth/signup') &&
-    !request.nextUrl.pathname.startsWith('/auth/forget-password') &&
-    !request.nextUrl.pathname.startsWith('/auth/update-password') && 
-    !request.nextUrl.pathname.startsWith('/pricing')
-
+    !pathname.startsWith('/auth/signin') &&
+    !pathname.startsWith('/auth/signup') &&
+    !pathname.startsWith('/auth/forget-password') &&
+    !pathname.startsWith('/auth/update-password') && 
+    !pathname.startsWith('/pricing')
   ) {
-    // no user, potentially respond by redirecting the user to the login page
+    // No user, redirect to login page
     const url = request.nextUrl.clone()
     url.pathname = '/auth/signin'
     return NextResponse.redirect(url)
   }
 
-  // IMPORTANT: You *must* return the supabaseResponse object as it is.
-  // If you're creating a new response object with NextResponse.next() make sure to:
-  // 1. Pass the request in it, like so:
-  //    const myNewResponse = NextResponse.next({ request })
-  // 2. Copy over the cookies, like so:
-  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-  // 3. Change the myNewResponse object to fit your needs, but avoid changing
-  //    the cookies!
-  // 4. Finally:
-  //    return myNewResponse
-  // If this is not done, you may be causing the browser and server to go out
-  // of sync and terminate the user's session prematurely!
-
-  return supabaseResponse; 
+  // IMPORTANT: You *must* return the supabaseResponse object as is.
+  return supabaseResponse
 }

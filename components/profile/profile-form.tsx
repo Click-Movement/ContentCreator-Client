@@ -19,8 +19,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Upload, Trash } from "lucide-react";
 import ImageCropper from "./image-cropper";
+import { useMutation } from "@tanstack/react-query";
+import { updateProfilePicture, updateUserProfile, removeProfilePicture } from "@/actions/actions.user";
 
 // Form schema with validation
 const formSchema = z.object({
@@ -34,8 +36,8 @@ const formSchema = z.object({
 type ProfileFormValues = z.infer<typeof formSchema>;
 
 interface ProfileFormProps {
-  userId: string;
   initialData: {
+    id: string; 
     firstName: string;
     lastName: string;
     email: string;
@@ -45,13 +47,90 @@ interface ProfileFormProps {
   };
 }
 
+// Define proper types for the action responses
+interface ProfileUpdateResponse {
+  success?: boolean;
+  error?: string;
+}
+
+interface ProfileImageResponse {
+  success?: boolean;
+  error?: string;
+  avatarUrl?: string;
+}
+
 export default function ProfileForm({initialData }: ProfileFormProps) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [showCropper, setShowCropper] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string>(initialData.avatarUrl);
+
+  // Profile update mutation with proper typing
+  const updateProfileMutation = useMutation<
+    ProfileUpdateResponse, // TData - what the mutation returns
+    Error,                // TError - type of error
+    ProfileFormValues     // TVariables - what the mutation accepts
+  >({
+    mutationFn: async (data: ProfileFormValues) => {
+      const result = await updateUserProfile(initialData.id, {
+        firstName: data.firstName, 
+        lastName: data.lastName, 
+        website: data.website, 
+        bio: data.bio,
+      });
+      return result as ProfileUpdateResponse;
+    },
+    onSuccess: () => {
+      toast.success("Profile updated successfully");
+      router.refresh();
+    },
+    onError: (error) => {
+      toast.error("Failed to update profile");
+      console.error("Error updating profile:", error);
+    }
+  });
+
+  // Profile image update mutation with proper typing
+  const updateProfileImageMutation = useMutation<
+    ProfileImageResponse, // TData - what the mutation returns
+    Error,               // TError - type of error
+    Blob                 // TVariables - what the mutation accepts
+  >({
+    mutationFn: async (blob: Blob) => {
+      const result = await updateProfilePicture(initialData.id, blob);
+      return result as ProfileImageResponse;
+    },
+    onSuccess: (data) => {
+      if (data && data.avatarUrl) {
+        setAvatarUrl(data.avatarUrl);
+      }
+      toast.success("Profile image updated successfully");
+    },
+    onError: (error) => {
+      toast.error("Failed to upload image");
+      console.error("Error uploading image:", error);
+    }
+  });
+
+  // Profile image removal mutation with proper typing
+  const removeProfileImageMutation = useMutation<
+    ProfileUpdateResponse, // TData - what the mutation returns
+    Error,                // TError - type of error
+    void                  // TVariables - this mutation doesn't need parameters
+  >({
+    mutationFn: async () => {
+      const result = await removeProfilePicture(initialData.id);
+      return result as ProfileUpdateResponse;
+    },
+    onSuccess: () => {
+      setAvatarUrl('');
+      toast.success("Profile image removed successfully");
+    },
+    onError: (error) => {
+      toast.error("Failed to remove profile image");
+      console.error("Error removing profile image:", error);
+    }
+  });
   
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(formSchema),
@@ -75,44 +154,29 @@ export default function ProfileForm({initialData }: ProfileFormProps) {
   // Handle cropped image
   const handleCroppedImage = async (blob: Blob) => {
     setShowCropper(false);
-    setIsUploading(true);
-
+    
     try {
       // Generate a temporary URL for preview
       const tempUrl = URL.createObjectURL(blob);
       setAvatarUrl(tempUrl);
       
-      // Simulate upload - in a real app, you would upload to your backend/storage
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      toast.success("Profile image updated successfully");
-      
+      // Use the mutation to upload the image
+      await updateProfileImageMutation.mutateAsync(blob);
     } catch (error) {
-      toast.error("Failed to upload image");
       console.error(error);
-    } finally {
-      setIsUploading(false);
+    }
+  };
+
+  // Handle removing profile image
+  const handleRemoveProfilePicture = () => {
+    if (confirm("Are you sure you want to remove your profile picture?")) {
+      removeProfileImageMutation.mutate();
     }
   };
 
   // Handle form submission
   const onSubmit = async (data: ProfileFormValues) => {
-    setIsSubmitting(true);
-    
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      console.log("Profile updated with data:", data);
-      toast.success("Profile updated successfully");
-      
-      router.refresh();
-    } catch (error) {
-      toast.error("Failed to update profile");
-      console.error(error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    updateProfileMutation.mutate(data);
   };
 
   const initials = `${initialData.firstName.charAt(0)}${initialData.lastName.charAt(0)}`;
@@ -140,7 +204,7 @@ export default function ProfileForm({initialData }: ProfileFormProps) {
                   </AvatarFallback>
                 </Avatar>
                 
-                {isUploading && (
+                {(updateProfileImageMutation.isPending || removeProfileImageMutation.isPending) && (
                   <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
                     <Loader2 className="h-6 w-6 text-white animate-spin" />
                   </div>
@@ -153,28 +217,42 @@ export default function ProfileForm({initialData }: ProfileFormProps) {
                   Upload a new profile picture. JPEG, PNG or GIF. Max file size 2MB.
                 </p>
                 
-                <div className="mt-2">
+                <div className="mt-2 flex gap-2">
                   <Input
                     type="file"
                     id="profileImage"
                     accept="image/*"
                     className="hidden"
                     onChange={handleFileChange}
-                    disabled={isUploading}
+                    disabled={updateProfileImageMutation.isPending || removeProfileImageMutation.isPending}
                   />
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     className="mt-2"
-                    disabled={isUploading}
+                    disabled={updateProfileImageMutation.isPending || removeProfileImageMutation.isPending}
                     asChild
                   >
                     <label htmlFor="profileImage" className="cursor-pointer">
                       <Upload className="h-4 w-4 mr-2" />
-                      {isUploading ? "Uploading..." : "Change Photo"}
+                      {updateProfileImageMutation.isPending ? "Uploading..." : "Change Photo"}
                     </label>
                   </Button>
+                  
+                  {avatarUrl && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-2 text-red-600 border-red-200 hover:bg-red-50"
+                      onClick={handleRemoveProfilePicture}
+                      disabled={updateProfileImageMutation.isPending || removeProfileImageMutation.isPending}
+                    >
+                      <Trash className="h-4 w-4 mr-2" />
+                      {removeProfileImageMutation.isPending ? "Removing..." : "Remove"}
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -262,9 +340,9 @@ export default function ProfileForm({initialData }: ProfileFormProps) {
           <div className="flex justify-end">
             <Button 
               type="submit" 
-              disabled={isSubmitting || !form.formState.isDirty}
+              disabled={updateProfileMutation.isPending || !form.formState.isDirty}
             >
-              {isSubmitting ? (
+              {updateProfileMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Saving...

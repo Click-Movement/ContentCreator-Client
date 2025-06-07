@@ -1,26 +1,29 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import ProfileView from "@/components/profile/ProfileView";
-import { getProfileData, getUsageData } from "@/lib/profile-data";
 import { Suspense } from "react";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import { getUserProfile, getUserUsageData } from "@/actions/actions.user";
+import { UsageDataType, UserProfile } from "@/types/types";
 
 // Correct type for page props
 interface ProfilePageProps {
- params: Promise<{ id: string }>
+  params: Promise<{ id: string }>
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-// ✅ Generate metadata for the page
+// ✅ Generate metadata for the page using the real server action
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>
 }): Promise<Metadata> {
-  const {id} = await params;
-  const profile = await getProfileData(id);
+  const { id } = await params;
+  
+  // Use the real server action instead of the mock function
+  const { profile, error } = await getUserProfile(id as string);
 
-  if (!profile) {
+  if (error || !profile) {
     return {
       title: "Profile Not Found",
     };
@@ -37,28 +40,24 @@ export async function generateMetadata({
   };
 }
 
-// ✅ Define static paths for prerendering
-export function generateStaticParams(): Array<{ id: string }> {
-  return [{ id: "user-1" }, { id: "user-2" }];
-}
-
 // ✅ Page component with correct types
 export default async function ProfilePage({
   params,
 }: ProfilePageProps) {
-  const { id } =  await params;
+  const { id } = await params;
 
-  const profile = await getProfileData(id);
-  if (!profile) {
+  const profileData = await getUserProfile(id as string); 
+  const userUsageData = await getUserUsageData(id as string);
+  
+  // Add proper error handling
+  if (!profileData || profileData.error || !profileData.profile) {
     notFound();
   }
-
-  const usageData = await getUsageData(id);
 
   return (
     <main className="flex min-h-screen flex-col p-4 md:p-8 bg-slate-50">
       <Suspense fallback={<LoadingSpinner />}>
-        <ProfileView profile={profile} usageData={usageData} />
+        <ProfileView profile={profileData.profile as UserProfile} usageData={userUsageData.usageData as UsageDataType} />
       </Suspense>
     </main>
   );

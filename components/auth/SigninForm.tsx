@@ -27,6 +27,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle, Mail, Lock, ArrowRight, Loader2, GithubIcon } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
+import { useRouter } from 'next/navigation'
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -34,6 +35,7 @@ const formSchema = z.object({
 });
 
 export function SigninForm() {
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -67,9 +69,16 @@ export function SigninForm() {
         setLoginError(result.error || "Invalid email or password. Please try again.");
         return;
       }
-      
-      // Redirect on success
-      window.location.href = '/';
+
+      // Check user role and redirect accordingly
+      if (result.user?.role === 'admin') {
+        console.log('Admin user signed in')
+        router.push('/admin/dashboard')
+      } else {
+        console.log('Regular user signed in')
+        router.push('/')
+      }
+
     } catch (error) {
       console.error("Login error:", error);
       setLoginError("An unexpected error occurred. Please try again.");

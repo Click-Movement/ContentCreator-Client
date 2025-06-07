@@ -35,6 +35,7 @@ interface UserProfile {
 export default function UserProfileDropdown() {
   const router = useRouter()
   const [user, setUser] = useState<UserProfile | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   // Use a temporary user ID for development until real authentication is in place
@@ -49,6 +50,7 @@ export default function UserProfileDropdown() {
         // Use the same method as in middleware - keep it simple!
         const { data: { user }, error } = await supabase.auth.getUser(); 
         console.log("User fetched:", user)
+        setUserId(user?.id || null); 
         
         if (error) {
           console.error("Error fetching user:", error.message)
@@ -154,7 +156,7 @@ export default function UserProfileDropdown() {
         </div>
         
         <DropdownMenuItem asChild>
-          <Link href={`/profile/user-1`} className="cursor-pointer flex items-center gap-2">
+          <Link href={`/profile/${userId}`} className="cursor-pointer flex items-center gap-2">
             <User className="w-4 h-4" />
             <span>Edit Profile</span>
           </Link>

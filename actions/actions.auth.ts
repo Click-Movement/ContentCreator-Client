@@ -8,11 +8,13 @@ import { redirect } from 'next/navigation'
 export async function login(email: string, password: string) {
   const supabase = await createClient()
 
+  // Sign in with email and password
   const { data, error } = await supabase.auth.signInWithPassword({
     email, 
     password
   })
 
+  // Handle sign-in errors
   if (error) {
     console.error("Login error:", error.message)
     return { success: false, error: error.message }
@@ -20,8 +22,48 @@ export async function login(email: string, password: string) {
 
   console.log("Login successful, session established:", data.session ? "Yes" : "No")
   
+  // If sign-in was successful, fetch the user's role from the users table
+  if (data.session && data.user) {
+    try {
+      // Get user's role from public.users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', data.user.id)
+        .single()
+      
+      if (userError) {
+        console.error("Error fetching user role:", userError.message)
+        // Continue with sign-in even if role fetch fails
+      } else {
+        // Successfully fetched role, include it in the response
+        console.log(`User role: ${userData.role}`)
+        
+        // Revalidate all pages to reflect new login state
+        revalidatePath('/', 'layout')
+        
+        return { 
+          success: true, 
+          session: data.session, 
+          user: {
+            ...data.user,
+            role: userData.role || 'user' // Default to 'user' if role is null
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Unexpected error fetching user role:", err)
+      // Continue with sign-in even if role fetch fails
+    }
+  }
+  
+  // Fallback return if role fetch fails but login succeeds
   revalidatePath('/', 'layout')
-  return { success: true, session: data.session }
+  return { 
+    success: true, 
+    session: data.session,
+    user: data.user
+  }
 }
 
 export async function signup(data: { 
@@ -41,6 +83,7 @@ export async function signup(data: {
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
+        role: "user",
       },
       emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/signin`,
     }

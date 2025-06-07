@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight, CreditCard, Bell, User, CreditCardIcon, BadgeCheck, ShieldCheck, Trophy } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { UsageDataType, UserProfile } from "@/types/types";
 
 // Define a type for profile data structure
 export interface ProfileData {
@@ -46,8 +47,8 @@ export interface UsageData {
 }
 
 interface ProfileViewProps {
-  profile: ProfileData;
-  usageData: UsageData;
+  profile: UserProfile;
+  usageData: UsageDataType;
 }
 
 // Animation variants
@@ -296,7 +297,6 @@ export default function ProfileView({ profile, usageData }: ProfileViewProps) {
               transition={{ delay: 0.1 }}
             >
               <ProfileForm 
-                userId={profile.id} 
                 initialData={profile} 
               />
             </motion.div>
