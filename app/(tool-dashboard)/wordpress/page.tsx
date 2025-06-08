@@ -2,16 +2,28 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import {  personas } from '@/types/personas';
+import { personas } from '@/types/personas';
 import Header from '@/components/header';
 import { PersonaType } from '@/lib/aiPersonaRewriter';
-// import { personas, PersonaType } from '@/types/personas';
+import { createClient } from '@/supabase/client';
+
+type SavedSite = {
+  id: string;
+  name: string;
+  url: string;
+  username: string;
+  created_at?: string;
+}
 
 export default function WordPressPage() {
+  const router = useRouter();
+  const supabase = createClient();
+
   const [wpUrl, setWpUrl] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingSites, setIsLoadingSites] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [rewrittenContent, setRewrittenContent] = useState<{
@@ -19,16 +31,28 @@ export default function WordPressPage() {
     content: string;
     persona: PersonaType;
   } | null>(null);
-  const [savedSites, setSavedSites] = useState<Array<{name: string, url: string, username: string}>>([]);
-  const [selectedSite, setSelectedSite] = useState('');
+  const [savedSites, setSavedSites] = useState<SavedSite[]>([]);
+  const [selectedSiteId, setSelectedSiteId] = useState('');
   const [siteName, setSiteName] = useState('');
   const [saveSiteDetails, setSaveSiteDetails] = useState(false);
-  const router = useRouter();
-  
-  // Load rewritten content from localStorage when component mounts
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Get the current user
   useEffect(() => {
+    async function getUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+      }
+    }
+    
+    getUser();
+  }, [supabase.auth]);
+
+  // Load rewritten content and saved sites when component mounts
+  useEffect(() => {
+    // Load rewritten content from localStorage
     if (typeof window !== 'undefined') {
-      // Load rewritten content
       const savedContent = localStorage.getItem('rewrittenContent');
       if (savedContent) {
         try {
@@ -40,30 +64,51 @@ export default function WordPressPage() {
       } else {
         setError('No rewritten content found. Please go back and rewrite content first.');
       }
+    }
+    
+    // Load saved sites from Supabase
+    async function loadSavedSites() {
+      if (!userId) return;
       
-      // Load saved WordPress sites
-      const savedSitesJson = localStorage.getItem('savedWordPressSites');
-      if (savedSitesJson) {
-        try {
-          const sites = JSON.parse(savedSitesJson);
-          setSavedSites(sites);
-        } catch (err) {
-          console.error('Failed to parse saved sites', err);
+      try {
+        setIsLoadingSites(true);
+        const { data, error } = await supabase
+          .from('saved_sites')
+          .select('*')
+          .eq('user_id', userId)
+          .order('name', { ascending: true });
+        
+        if (error) {
+          throw new Error(error.message);
         }
+        
+        setSavedSites(data || []);
+      } catch (err) {
+        console.error('Error loading saved sites:', err);
+        setError('Failed to load saved sites');
+      } finally {
+        setIsLoadingSites(false);
       }
     }
-  }, []);
+    
+    if (userId) {
+      loadSavedSites();
+    } else {
+      setIsLoadingSites(false);
+    }
+  }, [userId, supabase]);
 
   // Handle selecting a saved site
   const handleSiteSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedValue = e.target.value;
-    setSelectedSite(selectedValue);
+    const selectedId = e.target.value;
+    setSelectedSiteId(selectedId);
     
-    if (selectedValue) {
-      const site = savedSites.find(site => site.url === selectedValue);
+    if (selectedId) {
+      const site = savedSites.find(site => site.id === selectedId);
       if (site) {
         setWpUrl(site.url);
         setUsername(site.username);
+        setSiteName(site.name);
         // Password is not stored for security reasons
         setPassword('');
       }
@@ -72,53 +117,88 @@ export default function WordPressPage() {
       setWpUrl('');
       setUsername('');
       setPassword('');
+      setSiteName('');
     }
   };
 
-  // Handle saving a new WordPress site
-  const handleSaveSite = () => {
+  // Save site to Supabase
+  const saveSiteToSupabase = async () => {
+    if (!userId) {
+      setError('You must be logged in to save site details');
+      return false;
+    }
+
     if (!siteName || !wpUrl || !username) {
       setError('Please provide a site name, URL, and username to save the site');
-      return;
+      return false;
     }
     
-    // Check if site with same URL already exists
-    const existingSiteIndex = savedSites.findIndex(site => site.url === wpUrl);
-    
-    let updatedSites;
-    if (existingSiteIndex >= 0) {
-      // Update existing site
-      updatedSites = [...savedSites];
-      updatedSites[existingSiteIndex] = {
-        name: siteName,
-        url: wpUrl,
-        username: username
-      };
-    } else {
-      // Add new site
-      updatedSites = [
-        ...savedSites,
-        {
-          name: siteName,
-          url: wpUrl,
-          username: username
-        }
-      ];
+    try {
+      // Check if a site with this URL already exists for this user
+      const { data: existingSites } = await supabase
+        .from('saved_sites')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('url', wpUrl);
+      
+      
+      if (existingSites && existingSites.length > 0) {
+        // Update existing site
+        const { error } = await supabase
+          .from('saved_sites')
+          .update({
+            name: siteName,
+            username: username,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingSites[0].id)
+          .select();
+        
+        if (error) throw new Error(error.message);
+        // result = data;
+      } else {
+        // Insert new site
+        const {  error } = await supabase
+          .from('saved_sites')
+          .insert({
+            user_id: userId,
+            name: siteName,
+            url: wpUrl,
+            username: username
+          })
+          .select();
+        
+        if (error) throw new Error(error.message);
+        // result = data;
+      }
+      
+      // Refresh the sites list
+      const { data: refreshedSites, error: refreshError } = await supabase
+        .from('saved_sites')
+        .select('*')
+        .eq('user_id', userId)
+        .order('name', { ascending: true });
+      
+      if (refreshError) throw new Error(refreshError.message);
+      setSavedSites(refreshedSites || []);
+      
+      setSaveSiteDetails(false);
+      setSuccess('WordPress site details saved successfully!');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccess('');
+      }, 3000);
+      
+      return true;
+    } catch (err) {
+      console.error('Error saving site:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save site details');
+      return false;
     }
-    
-    // Save to localStorage
-    localStorage.setItem('savedWordPressSites', JSON.stringify(updatedSites));
-    setSavedSites(updatedSites);
-    setSiteName('');
-    setSaveSiteDetails(false);
-    setSuccess('WordPress site details saved successfully!');
-    
-    // Clear success message after 3 seconds
-    setTimeout(() => {
-      setSuccess('');
-    }, 3000);
   };
 
+  // Handle form submission to publish to WordPress
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -161,7 +241,7 @@ export default function WordPressPage() {
       
       // Save site details if checkbox is checked
       if (saveSiteDetails && siteName && wpUrl && username) {
-        handleSaveSite();
+        await saveSiteToSupabase();
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -169,10 +249,6 @@ export default function WordPressPage() {
       setIsLoading(false);
     }
   };
-
-
-
-
   
   // Find the persona name if available
   const personaName = rewrittenContent?.persona 
@@ -183,13 +259,6 @@ export default function WordPressPage() {
   return (
     <main className="flex min-h-screen flex-col p-4 md:p-8">
       <div className="w-full max-w-4xl mx-auto">
-        {/* Enhanced Header with Gradient Background */}
-        {/* <header className="mb-8 text-center">
-          <div className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white py-6 px-4 rounded-lg shadow-lg mb-6">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">Conservative Content Rewriter</h1>
-            <p className="text-lg text-blue-100">Transform your content with distinctive conservative voices</p>
-          </div>
-        </header> */}
         <Header/>
         
         {/* Step Indicator */}
@@ -254,32 +323,67 @@ export default function WordPressPage() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Saved Sites Dropdown */}
-                <div>
-                  <label htmlFor="savedSite" className="block text-sm font-medium text-gray-700 mb-1">
-                    Select a Saved WordPress Site
-                  </label>
-                  <div className="relative">
-                    <select
-                      id="savedSite"
-                      value={selectedSite}
-                      onChange={handleSiteSelect}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white transition-colors duration-200"
-                    >
-                      <option value="">Select a saved site</option>
-                      {savedSites.map((site) => (
-                        <option key={site.url} value={site.url}>
-                          {site.name} ({site.url})
-                        </option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
-                      <svg className="fill-current h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                      </svg>
+                {/* User auth status notice */}
+                {!userId && (
+                  <div className="bg-amber-50 border-l-4 border-amber-500 text-amber-700 p-4 rounded">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-1 9a1 1 0 11-2 0 1 1 0 012 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm">You are not logged in. Sign in to save your WordPress sites for future use.</p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+                
+                {/* Saved Sites Dropdown - only show if user is logged in */}
+                {userId && (
+                  <div>
+                    <label htmlFor="savedSite" className="block text-sm font-medium text-gray-700 mb-1">
+                      Select a Saved WordPress Site
+                    </label>
+                    <div className="relative">
+                      {isLoadingSites ? (
+                        <div className="flex items-center space-x-2 bg-gray-50 p-3 rounded-md">
+                          <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Loading saved sites...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <select
+                            id="savedSite"
+                            value={selectedSiteId}
+                            onChange={handleSiteSelect}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white transition-colors duration-200"
+                          >
+                            <option value="">Select a saved site</option>
+                            {savedSites.map((site) => (
+                              <option key={site.id} value={site.id}>
+                                {site.name} ({site.url})
+                              </option>
+                            ))}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
+                            <svg className="fill-current h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                              <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                            </svg>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    {savedSites.length === 0 && !isLoadingSites && userId && (
+                      <p className="mt-1 text-xs text-gray-500">
+                        No saved sites found. You can save your WordPress site details below.
+                      </p>
+                    )}
+                  </div>
+                )}
                 
                 {/* WordPress URL */}
                 <div>
@@ -332,27 +436,30 @@ export default function WordPressPage() {
                   />
                   <p className="mt-1 text-xs text-gray-500">
                     For better security, consider using an application password instead of your main account password.
+                    <strong> Passwords are never stored.</strong>
                   </p>
                 </div>
                 
-                {/* Save Site Details */}
-                <div>
-                  <div className="flex items-center">
-                    <input 
-                      id="saveSite" 
-                      type="checkbox" 
-                      checked={saveSiteDetails}
-                      onChange={(e) => setSaveSiteDetails(e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="saveSite" className="ml-2 block text-sm text-gray-700">
-                      Save site details for future use
-                    </label>
+                {/* Save Site Details - only show for logged in users */}
+                {userId && (
+                  <div>
+                    <div className="flex items-center">
+                      <input 
+                        id="saveSite" 
+                        type="checkbox" 
+                        checked={saveSiteDetails}
+                        onChange={(e) => setSaveSiteDetails(e.target.checked)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="saveSite" className="ml-2 block text-sm text-gray-700">
+                        Save site details for future use
+                      </label>
+                    </div>
                   </div>
-                </div>
+                )}
                 
                 {/* Site Name (conditional) */}
-                {saveSiteDetails && (
+                {saveSiteDetails && userId && (
                   <div className="bg-blue-50 p-4 rounded-md border border-blue-100">
                     <label htmlFor="siteName" className="block text-sm font-medium text-gray-700 mb-1">
                       Site Name <span className="text-red-500">*</span>
@@ -454,11 +561,6 @@ export default function WordPressPage() {
             )}
           </div>
         </div>
-        
-        {/* Footer */}
-        <footer className="mt-8 text-center text-gray-500 text-sm">
-          <p>Conservative Content Rewriter &copy; {new Date().getFullYear()}</p>
-        </footer>
       </div>
     </main>
   );
