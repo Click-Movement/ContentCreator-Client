@@ -28,52 +28,67 @@ export default function Home() {
   const [isLoadingPersonas, setIsLoadingPersonas] = useState(true);
 
   // Get the current user when the component mounts
-  useEffect(() => {
-    async function getUserData() {
-      try {
-        setIsLoadingUser(true);
-        const { data, error } = await supabase.auth.getUser();
-        if (error) {
-          console.error("Error fetching user:", error.message);
-          setUser(null);
-        } else {
-          console.log("User data in home page:", data.user);
-          setUser(data.user);
-          
-          // Show welcome toast when user is logged in
-         
-        }
-      } catch (err) {
-        console.error("Exception fetching user:", err);
+  // Update your auth effect to use sessionStorage for tracking sign-in state:
+useEffect(() => {
+  async function getUserData() {
+    try {
+      setIsLoadingUser(true);
+      const { data, error } = await supabase.auth.getUser();
+      if (error) {
+        console.error("Error fetching user:", error.message);
         setUser(null);
-      } finally {
-        setIsLoadingUser(false);
+      } else {
+        console.log("User data in home page:", data.user);
+        setUser(data.user);
+        
+        // Store user ID in sessionStorage to track logged-in state
+        if (data.user?.id) {
+          const currentStoredUserId = sessionStorage.getItem('currentUserId');
+          if (!currentStoredUserId) {
+            sessionStorage.setItem('currentUserId', data.user.id);
+          }
+        }
       }
+    } catch (err) {
+      console.error("Exception fetching user:", err);
+      setUser(null);
+    } finally {
+      setIsLoadingUser(false);
     }
+  }
 
-    getUserData();
+  getUserData();
 
-    // Listen for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user || null);
-      
-      if (event === 'SIGNED_IN' && session?.user) {
+  // Listen for auth state changes
+  const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    setUser(session?.user || null);
+    
+    // Get the stored user ID
+    const currentStoredUserId = sessionStorage.getItem('currentUserId');
+    
+    if (event === 'SIGNED_IN' && session?.user) {
+      // Only show toast if this is a new sign in (different user or no stored user)
+      if (!currentStoredUserId || currentStoredUserId !== session.user.id) {
         toast("Successfully signed in", {
           description: "Welcome to Content Creator!",
         });
-      } else if (event === 'SIGNED_OUT') {
-        toast("Signed out", {
-          description: "You have been successfully signed out.",
-        });
+        // Update stored user ID
+        sessionStorage.setItem('currentUserId', session.user.id);
       }
-    });
+    } else if (event === 'SIGNED_OUT') {
+      // Always show signout toast and clear stored user ID
+      toast("Signed out", {
+        description: "You have been successfully signed out.",
+      });
+      sessionStorage.removeItem('currentUserId');
+    }
+  });
 
-    return () => {
-      // Clean up the subscription
-      authListener?.subscription?.unsubscribe();
-    };
-  }, [supabase.auth]);
-
+  return () => {
+    // Clean up the subscription
+    authListener?.subscription?.unsubscribe();
+  };
+}, [supabase.auth]);
   // Load personas with the user's ID
   useEffect(() => {
     async function fetchPersonas() {

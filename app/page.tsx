@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowRight, Sparkles, Zap, Star, Shield, MessageSquare } from 'lucide-react';
+import { ArrowRight, Sparkles, Zap, Star, Shield, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/supabase/client';
 import { User } from '@supabase/auth-helpers-nextjs';
@@ -188,7 +188,7 @@ export default function LandingPage() {
                     size="lg" 
                     className="border-2 border-slate-300 hover:border-slate-400 text-lg px-8 py-6 rounded-xl"
                   >
-                    <Link href="/profile">
+                    <Link href="/content">
                       Go to Dashboard
                     </Link>
                   </Button>
@@ -381,6 +381,189 @@ export default function LandingPage() {
                 </Link>
               </Button>
             </motion.div>
+          </motion.div>
+        </div>
+      </section>
+      
+      {/* Pricing Section */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4">
+          <motion.div 
+            className="text-center mb-16"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={fadeIn}
+          >
+            <div className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-600 text-sm font-medium mb-4">
+              Flexible Pricing
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+              Choose the Plan That Works for You
+            </h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+              From casual writers to professional content teams, we have pricing options to fit your needs.
+            </p>
+          </motion.div>
+          
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+          >
+            {/* Free Plan */}
+            <motion.div 
+              className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden"
+              variants={fadeIn}
+              whileHover={{ y: -5, transition: { duration: 0.2 } }}
+            >
+              <div className="p-6 border-b border-slate-100">
+                <div className="text-slate-600 font-medium mb-1">Free</div>
+                <div className="flex items-baseline">
+                  <span className="text-3xl font-bold text-slate-900">$0</span>
+                  <span className="text-slate-600 ml-1">/month</span>
+                </div>
+                <p className="text-sm text-slate-500 mt-2">Perfect for occasional users</p>
+              </div>
+              <div className="p-6">
+                <ul className="space-y-4">
+                  <li className="flex items-center text-sm">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 shrink-0" />
+                    <span>1,000 AI credits monthly</span>
+                  </li>
+                  <li className="flex items-center text-sm">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 shrink-0" />
+                    <span>Basic personas</span>
+                  </li>
+                  <li className="flex items-center text-sm">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 shrink-0" />
+                    <span>Text export</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="px-6 pb-6">
+                <Button 
+                  asChild
+                  variant="outline" 
+                  size="lg"
+                  className="w-full"
+                >
+                  <Link href="/auth/signup">Get Started</Link>
+                </Button>
+              </div>
+            </motion.div>
+            
+            {/* Pro Plan */}
+            <motion.div 
+              className="bg-gradient-to-b from-blue-50 to-blue-100 rounded-2xl border-2 border-blue-600 shadow-xl overflow-hidden relative"
+              variants={fadeIn}
+              whileHover={{ y: -5, transition: { duration: 0.2 } }}
+            >
+              <div className="absolute -top-1 -right-12 transform rotate-45">
+                <div className="bg-blue-600 text-white py-1 px-12 text-xs font-medium">
+                  Most Popular
+                </div>
+              </div>
+              <div className="p-6 border-b border-blue-200">
+                <div className="text-blue-800 font-medium mb-1">Professional</div>
+                <div className="flex items-baseline">
+                  <span className="text-3xl font-bold text-slate-900">$29.99</span>
+                  <span className="text-slate-600 ml-1">/month</span>
+                </div>
+                <p className="text-sm text-slate-600 mt-2">Perfect for content professionals</p>
+              </div>
+              <div className="p-6">
+                <ul className="space-y-4">
+                  <li className="flex items-center text-sm">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 shrink-0" />
+                    <span>10,000 AI credits monthly</span>
+                  </li>
+                  <li className="flex items-center text-sm">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 shrink-0" />
+                    <span>All standard personas</span>
+                  </li>
+                  <li className="flex items-center text-sm">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 shrink-0" />
+                    <span>Custom personas</span>
+                  </li>
+                  <li className="flex items-center text-sm">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 shrink-0" />
+                    <span>WordPress integration</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="px-6 pb-6">
+                <Button 
+                  asChild
+                  size="lg"
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                >
+                  <Link href="/pricing">Upgrade Now</Link>
+                </Button>
+              </div>
+            </motion.div>
+            
+            {/* Business Plan */}
+            <motion.div 
+              className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden"
+              variants={fadeIn}
+              whileHover={{ y: -5, transition: { duration: 0.2 } }}
+            >
+              <div className="p-6 border-b border-slate-100">
+                <div className="text-slate-600 font-medium mb-1">Business</div>
+                <div className="flex items-baseline">
+                  <span className="text-3xl font-bold text-slate-900">$59.99</span>
+                  <span className="text-slate-600 ml-1">/month</span>
+                </div>
+                <p className="text-sm text-slate-500 mt-2">For teams and businesses</p>
+              </div>
+              <div className="p-6">
+                <ul className="space-y-4">
+                  <li className="flex items-center text-sm">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 shrink-0" />
+                    <span>25,000 AI credits monthly</span>
+                  </li>
+                  <li className="flex items-center text-sm">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 shrink-0" />
+                    <span>Team collaboration</span>
+                  </li>
+                  <li className="flex items-center text-sm">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 shrink-0" />
+                    <span>Dedicated support</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="px-6 pb-6">
+                <Button 
+                  asChild
+                  variant="outline" 
+                  size="lg"
+                  className="w-full"
+                >
+                  <Link href="/pricing">View Details</Link>
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+          
+          <motion.div 
+            className="text-center mt-10"
+            variants={fadeIn}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+          >
+            <Button 
+              asChild
+              variant="link" 
+              className="text-blue-600 hover:text-blue-700 font-medium"
+            >
+              <Link href="/pricing" className="flex items-center">
+                View full pricing details <ArrowRight className="ml-1 h-4 w-4" />
+              </Link>
+            </Button>
           </motion.div>
         </div>
       </section>

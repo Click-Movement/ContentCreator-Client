@@ -76,7 +76,7 @@ export function SigninForm() {
         router.push('/admin/dashboard')
       } else {
         console.log('Regular user signed in')
-        router.push('/')
+        router.push('/content')
       }
 
     } catch (error) {

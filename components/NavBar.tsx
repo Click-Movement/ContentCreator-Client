@@ -48,24 +48,24 @@ export default function NavBar() {
               Home
             </Link>
             <Link 
-              href="/rewrite"
+              href="/pricing"
               className={`px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                 isActive('/rewrite') 
                   ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' 
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
             >
-              Rewrites
+              Pricing
             </Link>
             <Link 
-              href="/about"
+              href="/content"
               className={`px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                 isActive('/about') 
                   ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' 
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
             >
-              About
+              Tool
             </Link>
           </div>
           
